@@ -4,6 +4,7 @@ import Header from "./components/Header";
 import Home from "./pages/Home";
 import EventsPage from "./pages/EventsPage";
 import MembersPage from "./pages/MembersPage";
+import RaceListPage from "./pages/RaceListPage";
 
 const App = () => {
   return (
@@ -17,6 +18,8 @@ const App = () => {
           <Route path="/" element={<Home />} />
           <Route path="/events" element={<EventsPage />} />
           <Route path="/members" element={<MembersPage />} />
+          {/* Tambahkan rute baru untuk List Race */}
+          <Route path="/races" element={<RaceListPage />} />
 
           {/* Tambahkan rute fallback jika halaman tidak ditemukan */}
           <Route path="*" element={<NotFound />} />

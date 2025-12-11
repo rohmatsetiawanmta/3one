@@ -2,71 +2,31 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "../utils/supabaseClient";
 
+// DATA MOCK DIREVISI sesuai skema tabel 'profiles'
 const mockMembers = [
-  {
-    id: 1,
-    name: "Budi Setiawan",
-    personal_best: "3:15:00 Marathon",
-    avatar: "https://via.placeholder.com/150/0000FF/FFFFFF?text=BS",
-  },
-  {
-    id: 2,
-    name: "Citra Dewi",
-    personal_best: "1:45:00 Half Marathon",
-    avatar: "https://via.placeholder.com/150/FF0077/FFFFFF?text=CD",
-  },
-  {
-    id: 3,
-    name: "Doni Prakoso",
-    personal_best: "0:42:30 10K",
-    avatar: "https://via.placeholder.com/150/00FFFF/FFFFFF?text=DP",
-  },
-  {
-    id: 4,
-    name: "Eka Putri",
-    personal_best: "New Runner",
-    avatar: "https://via.placeholder.com/150/FF8800/FFFFFF?text=EP",
-  },
-  {
-    id: 5,
-    name: "Fajar Nugraha",
-    personal_best: "1:35:00 Half Marathon",
-    avatar: "https://via.placeholder.com/150/4CAF50/FFFFFF?text=FN",
-  },
-  {
-    id: 6,
-    name: "Gina Amelia",
-    personal_best: "4:05:00 Marathon",
-    avatar: "https://via.placeholder.com/150/9C27B0/FFFFFF?text=GA",
-  },
-  {
-    id: 7,
-    name: "Hadi Susanto",
-    personal_best: "0:50:00 10K",
-    avatar: "https://via.placeholder.com/150/FFEB3B/000000?text=HS",
-  },
-  {
-    id: 8,
-    name: "Indah Permata",
-    personal_best: "New Runner",
-    avatar: "https://via.placeholder.com/150/03A9F4/FFFFFF?text=IP",
-  },
+  { id: 1, full_name: "Budi Setiawan", nick_name: "BudiS" },
+  { id: 2, full_name: "Citra Dewi", nick_name: "CitraD" },
+  { id: 3, full_name: "Doni Prakoso", nick_name: "DoniP" },
+  { id: 4, full_name: "Eka Putri", nick_name: "EkaP" },
+  { id: 5, full_name: "Fajar Nugraha", nick_name: "FajarN" },
+  { id: 6, full_name: "Gina Amelia", nick_name: "GinaA" },
+  { id: 7, full_name: "Hadi Susanto", nick_name: "HadiS" },
+  { id: 8, full_name: "Indah Permata", nick_name: "IndahP" },
 ];
 
 const MemberCard = ({ member }) => (
+  // Disesuaikan: Menghapus avatar dan personal_best
   <div className="bg-white p-4 rounded-xl shadow-lg text-black flex items-center space-x-4">
-    <img
-      src={member.avatar}
-      alt={member.name}
-      className="w-12 h-12 rounded-full object-cover border-2 border-blue-900"
-    />
+    {/* Mengganti Avatar dengan inisial atau ikon default */}
+    <div className="w-12 h-12 rounded-full bg-blue-900 text-white flex items-center justify-center font-bold text-lg flex-shrink-0">
+      {member.nick_name.charAt(0)}
+    </div>
+
     <div className="flex-grow">
-      <h3 className="text-lg font-bold">{member.name}</h3>
+      {/* Menggunakan nick_name dan full_name */}
+      <h3 className="text-lg font-bold">{member.nick_name}</h3>
       <p className="text-sm text-gray-500">
-        PB:{" "}
-        <span className="text-blue-900 font-semibold">
-          {member.personal_best}
-        </span>
+        <span className="text-blue-900 font-semibold">{member.full_name}</span>
       </p>
     </div>
     <button className="text-xs text-blue-900 font-semibold hover:text-blue-700">
@@ -82,6 +42,27 @@ const MembersList = ({ isFullPage = false }) => {
   const [loading, setLoading] = useState(false);
 
   // LOGIKA FETCH SUPABASE (dapat disesuaikan)
+  useEffect(() => {
+    async function fetchMembers() {
+      setLoading(true);
+      // Fetch dari tabel 'profiles' dengan kolom baru
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, full_name, nick_name")
+        .limit(isFullPage ? 100 : 4)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching members:", error.message);
+        setMembers(isFullPage ? mockMembers : mockMembers.slice(0, 4));
+      } else {
+        // setMembers(data); // Uncomment ini setelah Supabase siap
+      }
+      setLoading(false);
+    }
+
+    // fetchMembers(); // Komentar dipertahankan karena tidak ada akses ke Supabase
+  }, [isFullPage]);
 
   return (
     <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">

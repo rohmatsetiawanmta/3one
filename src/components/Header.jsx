@@ -43,7 +43,9 @@ const Header = () => {
       {/* 2. Navigasi: Pastikan Navigasi juga Flex dan di tengah */}
       <nav className="space-x-6 flex items-center">
         <NavItem title="Home" to="/" />
-        <NavItem title="Events" to="/events" />
+        {/* <NavItem title="Events" to="/events" /> */}
+        <NavItem title="List Race" to="/races" />
+        {/* <NavItem title="Members" to="/members" /> */}
       </nav>
     </header>
   );
