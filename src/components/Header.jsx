@@ -1,6 +1,8 @@
 // src/components/Header.jsx
 import React from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { LogIn, LogOut } from "lucide-react";
+import { supabase } from "../utils/supabaseClient"; // Import supabase untuk logout
 
 const NavItem = ({ title, to }) => {
   const location = useLocation();
@@ -26,7 +28,15 @@ const NavItem = ({ title, to }) => {
   );
 };
 
-const Header = () => {
+// Menerima session prop
+const Header = ({ session }) => {
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/admin/login"); // Arahkan kembali ke halaman login setelah logout
+  };
+
   return (
     <header className="sticky top-0 w-full z-20 p-5 flex justify-between items-center text-white bg-black bg-opacity-90 shadow-lg">
       {/* 1. Kontainer Logo */}
@@ -46,6 +56,25 @@ const Header = () => {
         {/* <NavItem title="Events" to="/events" /> */}
         <NavItem title="List Race" to="/races" />
         {/* <NavItem title="Members" to="/members" /> */}
+
+        {/* Conditional Login/Logout Link */}
+        {session ? (
+          <button
+            onClick={handleLogout}
+            className="ml-4 p-2 rounded-full hover:bg-gray-700 transition duration-200 text-red-400"
+            title="Logout Admin"
+          >
+            <LogOut className="w-5 h-5" />
+          </button>
+        ) : (
+          <Link
+            to="/admin/login"
+            className="ml-4 p-2 rounded-full hover:bg-gray-700 transition duration-200 text-yellow-400"
+            title="Admin Login"
+          >
+            <LogIn className="w-5 h-5" />
+          </Link>
+        )}
       </nav>
     </header>
   );

@@ -7,7 +7,7 @@ const Home = () => {
     <div className="text-white">
       <section
         id="hero"
-        className="relative h-[80vh] flex items-center justify-center text-center overflow-hidden bg-black -mt-[74px]"
+        className="relative h-[80vh] flex items-center justify-center text-center overflow-hidden -mt-[74px]"
       >
         <div
           className="absolute inset-0 bg-cover bg-center opacity-50"
