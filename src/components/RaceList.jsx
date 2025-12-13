@@ -9,9 +9,10 @@ import {
   Plus,
   X,
   Search,
+  Pencil, // Icon untuk Edit
 } from "lucide-react";
 
-// --- Komponen Modal Pendaftaran Baru: RegistrationModal (Tidak Berubah) ---
+// --- Komponen Modal Pendaftaran Baru: RegistrationModal ---
 const RegistrationModal = ({
   isOpen,
   onClose,
@@ -183,8 +184,9 @@ const RegistrationModal = ({
   );
 };
 
-// --- Komponen Modal Tambah Lomba: RaceModal (Tidak Berubah) ---
-const RaceModal = ({ isOpen, onClose, onSave }) => {
+// --- Komponen Modal Tambah/Edit Lomba: RaceModal (FIXED SCROLL) ---
+const RaceModal = ({ isOpen, onClose, onSaveOrUpdate, initialRaceData }) => {
+  const isEditing = !!initialRaceData;
   const [raceData, setRaceData] = useState({
     name: "",
     location: "",
@@ -195,6 +197,30 @@ const RaceModal = ({ isOpen, onClose, onSave }) => {
   });
   const [loading, setLoading] = useState(false);
   const [saveError, setSaveError] = useState(null);
+
+  useEffect(() => {
+    if (initialRaceData) {
+      setRaceData({
+        name: initialRaceData.name,
+        location: initialRaceData.location,
+        date: initialRaceData.date,
+        categories: initialRaceData.categories
+          ? initialRaceData.categories.join(", ")
+          : "",
+        organizer_url: initialRaceData.organizer_url || "",
+        instagram_url: initialRaceData.instagram_url || "",
+      });
+    } else {
+      setRaceData({
+        name: "",
+        location: "",
+        date: "",
+        categories: "",
+        organizer_url: "",
+        instagram_url: "",
+      });
+    }
+  }, [initialRaceData]);
 
   if (!isOpen) return null;
 
@@ -218,7 +244,7 @@ const RaceModal = ({ isOpen, onClose, onSave }) => {
       return;
     }
 
-    const insertData = {
+    const payload = {
       name: raceData.name,
       location: raceData.location,
       date: raceData.date,
@@ -227,32 +253,40 @@ const RaceModal = ({ isOpen, onClose, onSave }) => {
       instagram_url: raceData.instagram_url || null,
     };
 
-    const { error } = await supabase.from("races").insert([insertData]);
+    let error;
+
+    if (isEditing) {
+      // OPERASI UPDATE
+      const response = await supabase
+        .from("races")
+        .update(payload)
+        .eq("id", initialRaceData.id);
+      error = response.error;
+    } else {
+      // OPERASI INSERT (Tambah Baru)
+      const response = await supabase.from("races").insert([payload]);
+      error = response.error;
+    }
 
     if (error) {
-      console.error("Error saving new race:", error);
+      console.error("Error saving race:", error);
       setSaveError(`Gagal menyimpan lomba: ${error.message}`);
     } else {
       setSaveError(null);
-      onSave();
-      setRaceData({
-        name: "",
-        location: "",
-        date: "",
-        categories: "",
-        organizer_url: "",
-        instagram_url: "",
-      });
-      onClose();
+      onSaveOrUpdate();
+      onClose(); // Menutup dan mereset melalui close handler di parent
     }
     setLoading(false);
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-900 p-8 rounded-xl shadow-2xl max-w-lg w-full border border-blue-400">
+    // Wrapper Modal: Memungkinkan scroll pada modal itu sendiri
+    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4 overflow-y-auto">
+      {/* Konten Modal: Batasi tinggi dan tambahkan overflow-y-auto */}
+      {/* NOTE: scrollbar-hide harus didefinisikan di src/index.css */}
+      <div className="bg-gray-900 p-8 rounded-xl shadow-2xl max-w-lg w-full border border-blue-400 max-h-[90vh] my-auto overflow-y-auto scrollbar-hide">
         <h3 className="text-2xl font-bold text-blue-400 mb-4">
-          Tambah Lomba Lari Baru
+          {isEditing ? `${initialRaceData.name}` : "Tambah Race Baru"}
         </h3>
         <p className="text-sm text-gray-400 mb-6">
           Masukkan detail lomba. Kategori harus dipisahkan dengan koma (Contoh:
@@ -383,7 +417,8 @@ const RaceModal = ({ isOpen, onClose, onSave }) => {
             />
           </div>
 
-          <div className="flex justify-end space-x-3">
+          <div className="flex justify-end space-x-3 mt-4">
+            {/* Menambahkan margin top pada tombol */}
             <button
               type="button"
               onClick={onClose}
@@ -397,7 +432,11 @@ const RaceModal = ({ isOpen, onClose, onSave }) => {
               className="px-6 py-2 bg-blue-500 text-white font-bold rounded-lg hover:bg-blue-600 transition disabled:bg-gray-500"
               disabled={loading}
             >
-              {loading ? "Menyimpan..." : "Simpan Lomba"}
+              {loading
+                ? "Menyimpan..."
+                : isEditing
+                ? "Update Lomba"
+                : "Simpan Lomba"}
             </button>
           </div>
         </form>
@@ -406,7 +445,7 @@ const RaceModal = ({ isOpen, onClose, onSave }) => {
   );
 };
 
-// --- Komponen Modal Daftar Peserta Baru: ParticipantsModal (UPDATED) ---
+// --- Komponen Modal Daftar Peserta Baru: ParticipantsModal (UPDATED SCROLLBAR HIDE) ---
 const ParticipantsModal = ({ isOpen, onClose, race }) => {
   if (!isOpen || !race) return null;
 
@@ -446,7 +485,8 @@ const ParticipantsModal = ({ isOpen, onClose, race }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-900 p-8 rounded-xl shadow-2xl max-w-lg w-full border border-yellow-400">
+      {/* Konten Modal: Tambahkan 'scrollbar-hide' */}
+      <div className="bg-gray-900 p-8 rounded-xl shadow-2xl max-w-lg w-full border border-yellow-400 max-h-[90vh] my-auto overflow-y-auto scrollbar-hide">
         <div className="flex justify-between items-start mb-4">
           <h3 className="text-xl font-bold text-yellow-400">{race.name}</h3>
           <button onClick={onClose} className="text-gray-500 hover:text-white">
@@ -463,12 +503,13 @@ const ParticipantsModal = ({ isOpen, onClose, race }) => {
             <p className="text-sm text-gray-300 mb-4">
               Total {participants.length} anggota terdaftar.
             </p>
-            <div className="space-y-4 max-h-80 overflow-y-auto pr-2">
+            {/* Konten yang bisa di scroll: Tambahkan 'scrollbar-hide' */}
+            <div className="space-y-4 max-h-80 overflow-y-auto pr-2 scrollbar-hide">
               {categories.map((category) => (
                 <div key={category}>
                   {/* Kategori Badge (Ukuran Lebih Besar) */}
                   <span className="inline-block px-3 py-1 bg-blue-900 text-lg font-extrabold text-blue-300 rounded-lg mb-2">
-                    {category}
+                    {category} ({groupedParticipants[category].length})
                   </span>
 
                   {/* Daftar Anggota (Flex Layout dengan Badge Nama) */}
@@ -502,14 +543,15 @@ const ParticipantsModal = ({ isOpen, onClose, race }) => {
   );
 };
 
-// --- Komponen Utama: RaceList (UPDATED untuk Auth Check) ---
+// --- Komponen Utama: RaceList (UPDATED: Vertical Action Column) ---
 const RaceList = ({ session }) => {
-  // Menerima session prop
   const [races, setRaces] = useState([]);
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingRace, setEditingRace] = useState(null);
 
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [selectedRace, setSelectedRace] = useState(null);
@@ -529,6 +571,21 @@ const RaceList = ({ session }) => {
     }
   };
 
+  const closeRaceModal = () => {
+    setIsModalOpen(false);
+    setEditingRace(null);
+  };
+
+  const openAddModal = () => {
+    setEditingRace(null);
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (race) => {
+    setEditingRace(race);
+    setIsModalOpen(true);
+  };
+
   const openRegistrationModal = (race) => {
     if (members.length > 0) {
       setSelectedRace(race);
@@ -543,11 +600,11 @@ const RaceList = ({ session }) => {
     setIsParticipantsModalOpen(true);
   };
 
-  // --- Fungsi Fetch Members (UPDATED: Hapus full_name) ---
+  // --- Fungsi Fetch Members (Tidak Berubah) ---
   const fetchMembers = useCallback(async () => {
     const { data, error } = await supabase
       .from("profiles")
-      .select("id, nick_name") // HANYA SELECT id dan nick_name
+      .select("id, nick_name")
       .order("nick_name", { ascending: true });
 
     if (error) {
@@ -558,7 +615,7 @@ const RaceList = ({ session }) => {
     }
   }, []);
 
-  // --- Fungsi Fetch Races (UPDATED untuk Search) ---
+  // --- Fungsi Fetch Races (Tidak Berubah) ---
   const fetchRaces = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -625,11 +682,11 @@ const RaceList = ({ session }) => {
         {/* Tombol Add Race (CONDITIONAL) */}
         {isAdmin && (
           <button
-            onClick={() => setIsModalOpen(true)}
+            onClick={openAddModal}
             className="px-6 py-2 bg-yellow-500 text-gray-900 font-bold rounded-lg hover:bg-yellow-400 transition shadow-lg flex items-center space-x-2"
           >
             <Plus className="w-5 h-5" />
-            <span>Tambah Lomba Baru</span>
+            <span>Tambah Race Baru</span>
           </button>
         )}
       </div>
@@ -720,9 +777,22 @@ const RaceList = ({ session }) => {
                     )}
                   </td>
 
-                  {/* Kolom Aksi */}
+                  {/* Kolom Aksi (VERTICALLY STACKED) */}
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex flex-col space-y-2">
+                    <div className="flex flex-col space-y-2 items-start">
+                      {/* Tombol Edit (Hanya tampil jika Admin Login) */}
+                      {isAdmin && (
+                        <button
+                          onClick={() => openEditModal(race)}
+                          className="text-blue-500 hover:text-blue-300 text-xs font-semibold flex items-center space-x-1"
+                          title="Edit Detail Lomba"
+                        >
+                          <Pencil className="w-4 h-4" />
+                          <span>Edit</span>
+                        </button>
+                      )}
+
+                      {/* Tombol Daftar */}
                       <button
                         onClick={() => openRegistrationModal(race)}
                         className="text-yellow-400 hover:text-yellow-300 text-xs font-semibold flex items-center space-x-1"
@@ -730,8 +800,10 @@ const RaceList = ({ session }) => {
                         <Plus className="w-3 h-3" />
                         <span>Daftar</span>
                       </button>
+
+                      {/* Tautan Tambahan */}
                       {(race.organizer_url || race.instagram_url) && (
-                        <div className="flex space-x-2">
+                        <div className="flex space-x-2 mt-1">
                           {race.organizer_url && (
                             <a
                               href={race.organizer_url}
@@ -765,11 +837,12 @@ const RaceList = ({ session }) => {
         )}
       </div>
 
-      {/* Modal Tambah Lomba */}
+      {/* Modal Tambah/Edit Lomba */}
       <RaceModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSave={fetchRaces}
+        onClose={closeRaceModal}
+        onSaveOrUpdate={fetchRaces}
+        initialRaceData={editingRace}
       />
 
       {/* Modal Pendaftaran Lomba */}
