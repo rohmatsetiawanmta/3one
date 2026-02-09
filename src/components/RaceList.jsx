@@ -12,6 +12,114 @@ import {
   Pencil, // Icon untuk Edit
 } from "lucide-react";
 
+// --- Komponen Kartu Lomba Mobile: RaceCardMobile ---
+const RaceCardMobile = ({
+  race,
+  isAdmin,
+  openEditModal,
+  openRegistrationModal,
+  openParticipantsModal,
+  formatDate,
+}) => (
+  <div className="bg-gray-800 p-4 rounded-lg shadow-lg border border-gray-700 space-y-3">
+    {/* Header Lomba */}
+    <div className="flex justify-between items-start">
+      <div className="flex-1 min-w-0">
+        <div className="text-xl font-bold text-blue-400 truncate">
+          {race.name}
+        </div>
+        <div className="text-sm text-gray-400 mt-1 flex items-center space-x-2">
+          <MapPin className="w-3 h-3 text-gray-500 flex-shrink-0" />
+          <span className="truncate">{race.location}</span>
+        </div>
+      </div>
+      <div className="text-right flex-shrink-0 ml-3">
+        <div className="text-sm font-semibold text-yellow-400">
+          {formatDate(race.date)}
+        </div>
+      </div>
+    </div>
+
+    {/* Kategori */}
+    <div className="border-t border-gray-700 pt-2">
+      <p className="text-xs text-gray-400 mb-1">Kategori:</p>
+      <div className="flex flex-wrap gap-1">
+        {race.categories.map((category, idx) => (
+          <span
+            key={idx}
+            className="px-2 py-0.5 bg-green-900 text-green-300 rounded-md text-xs font-bold"
+          >
+            {category}
+          </span>
+        ))}
+      </div>
+    </div>
+
+    {/* Peserta & Link */}
+    <div className="flex justify-between items-center border-t border-gray-700 pt-3">
+      <div className="flex flex-col">
+        <div className="text-sm text-white font-medium">
+          {race.registrations ? race.registrations.length : 0} Anggota
+        </div>
+        {race.registrations && race.registrations.length > 0 && (
+          <button
+            onClick={() => openParticipantsModal(race)}
+            className="text-blue-400 hover:text-blue-300 text-xs font-semibold mt-1 text-left"
+          >
+            Lihat Peserta Detail
+          </button>
+        )}
+      </div>
+
+      {/* Action Buttons (Link Organizer & IG) */}
+      <div className="flex space-x-3">
+        {race.organizer_url && (
+          <a
+            href={race.organizer_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-gray-500 hover:text-gray-300 text-xs flex items-center"
+            title="Situs Resmi"
+          >
+            <ExternalLink className="w-4 h-4" />
+          </a>
+        )}
+        {race.instagram_url && (
+          <a
+            href={race.instagram_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-gray-500 hover:text-gray-300 text-xs flex items-center"
+            title="Instagram"
+          >
+            <Instagram className="w-4 h-4" />
+          </a>
+        )}
+      </div>
+    </div>
+
+    {/* Primary Actions (Daftar & Edit) */}
+    <div className="flex justify-end space-x-2 pt-3 border-t border-gray-700">
+      {isAdmin && (
+        <button
+          onClick={() => openEditModal(race)}
+          className="px-3 py-1 bg-blue-600 text-white rounded text-xs font-semibold flex items-center space-x-1 hover:bg-blue-500 transition"
+        >
+          <Pencil className="w-3 h-3" />
+          <span>Edit</span>
+        </button>
+      )}
+      <button
+        onClick={() => openRegistrationModal(race)}
+        className="px-3 py-1 bg-yellow-500 text-gray-900 rounded text-xs font-semibold flex items-center space-x-1 hover:bg-yellow-400 transition"
+      >
+        <Plus className="w-3 h-3" />
+        <span>Daftar</span>
+      </button>
+    </div>
+  </div>
+);
+
 // --- Komponen Modal Pendaftaran Baru: RegistrationModal ---
 const RegistrationModal = ({
   isOpen,
@@ -711,129 +819,150 @@ const RaceList = ({ session }) => {
         )}
 
         {!loading && races.length > 0 && (
-          <table className="min-w-full divide-y divide-gray-700">
-            <thead className="bg-gray-700">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                  Lomba
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                  Kategori
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                  Peserta
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                  Aksi
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-700">
+          <>
+            {/* Tampilan Mobile: Kartu (Hidden MD:BLOCK) */}
+            <div className="md:hidden space-y-6">
               {races.map((race) => (
-                <tr
+                <RaceCardMobile
                   key={race.id}
-                  className="hover:bg-gray-700 transition duration-150"
-                >
-                  {/* Kolom Lomba */}
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-blue-400">
-                      {race.name}
-                    </div>
-                    <div className="text-xs text-gray-400 mt-1 flex items-center space-x-2">
-                      <MapPin className="w-3 h-3 text-gray-500" />
-                      <span>{race.location}</span>
-                      <Calendar className="w-3 h-3 text-gray-500 ml-2" />
-                      <span>{formatDate(race.date)}</span>
-                    </div>
-                  </td>
+                  race={race}
+                  isAdmin={isAdmin}
+                  openEditModal={openEditModal}
+                  openRegistrationModal={openRegistrationModal}
+                  openParticipantsModal={openParticipantsModal}
+                  formatDate={formatDate}
+                />
+              ))}
+            </div>
 
-                  {/* Kolom Kategori */}
-                  <td className="px-6 py-4">
-                    <div className="flex flex-wrap gap-1">
-                      {race.categories.map((category, idx) => (
-                        <span
-                          key={idx}
-                          className="px-2 py-0.5 bg-green-900 text-green-300 rounded-md text-xs font-bold"
-                        >
-                          {category}
-                        </span>
-                      ))}
-                    </div>
-                  </td>
+            {/* Tampilan Desktop: Tabel (HIDDEN MD:BLOCK) */}
+            <div className="hidden md:block w-full overflow-x-auto bg-gray-800 rounded-lg shadow-xl">
+              <table className="min-w-full divide-y divide-gray-700">
+                <thead className="bg-gray-700">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                      Lomba
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                      Kategori
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                      Peserta
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                      Aksi
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-700">
+                  {races.map((race) => (
+                    <tr
+                      key={race.id}
+                      className="hover:bg-gray-700 transition duration-150"
+                    >
+                      {/* Kolom Lomba */}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-blue-400">
+                          {race.name}
+                        </div>
+                        <div className="text-xs text-gray-400 mt-1 flex items-center space-x-2">
+                          <MapPin className="w-3 h-3 text-gray-500" />
+                          <span>{race.location}</span>
+                          <Calendar className="w-3 h-3 text-gray-500 ml-2" />
+                          <span>{formatDate(race.date)}</span>
+                        </div>
+                      </td>
 
-                  {/* Kolom Peserta */}
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-white mb-1">
-                      {race.registrations ? race.registrations.length : 0}{" "}
-                      Anggota
-                    </div>
-                    {race.registrations && race.registrations.length > 0 && (
-                      <button
-                        onClick={() => openParticipantsModal(race)}
-                        className="text-blue-400 hover:text-blue-300 text-xs font-semibold"
-                      >
-                        Lihat Anggota
-                      </button>
-                    )}
-                  </td>
-
-                  {/* Kolom Aksi (VERTICALLY STACKED) */}
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex flex-col space-y-2 items-start">
-                      {/* Tombol Edit (Hanya tampil jika Admin Login) */}
-                      {isAdmin && (
-                        <button
-                          onClick={() => openEditModal(race)}
-                          className="text-blue-500 hover:text-blue-300 text-xs font-semibold flex items-center space-x-1"
-                          title="Edit Detail Lomba"
-                        >
-                          <Pencil className="w-4 h-4" />
-                          <span>Edit</span>
-                        </button>
-                      )}
-
-                      {/* Tombol Daftar */}
-                      <button
-                        onClick={() => openRegistrationModal(race)}
-                        className="text-yellow-400 hover:text-yellow-300 text-xs font-semibold flex items-center space-x-1"
-                      >
-                        <Plus className="w-3 h-3" />
-                        <span>Daftar</span>
-                      </button>
-
-                      {/* Tautan Tambahan */}
-                      {(race.organizer_url || race.instagram_url) && (
-                        <div className="flex space-x-2 mt-1">
-                          {race.organizer_url && (
-                            <a
-                              href={race.organizer_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-gray-500 hover:text-gray-300 text-xs flex items-center"
-                              title="Situs Resmi"
+                      {/* Kolom Kategori */}
+                      <td className="px-6 py-4">
+                        <div className="flex flex-wrap gap-1">
+                          {race.categories.map((category, idx) => (
+                            <span
+                              key={idx}
+                              className="px-2 py-0.5 bg-green-900 text-green-300 rounded-md text-xs font-bold"
                             >
-                              <ExternalLink className="w-3 h-3" />
-                            </a>
+                              {category}
+                            </span>
+                          ))}
+                        </div>
+                      </td>
+
+                      {/* Kolom Peserta */}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-white mb-1">
+                          {race.registrations ? race.registrations.length : 0}{" "}
+                          Anggota
+                        </div>
+                        {race.registrations &&
+                          race.registrations.length > 0 && (
+                            <button
+                              onClick={() => openParticipantsModal(race)}
+                              className="text-blue-400 hover:text-blue-300 text-xs font-semibold"
+                            >
+                              Lihat Anggota
+                            </button>
                           )}
-                          {race.instagram_url && (
-                            <a
-                              href={race.instagram_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-gray-500 hover:text-gray-300 text-xs flex items-center"
-                              title="Instagram"
+                      </td>
+
+                      {/* Kolom Aksi (VERTICALLY STACKED) */}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex flex-col space-y-2 items-start">
+                          {/* Tombol Edit (Hanya tampil jika Admin Login) */}
+                          {isAdmin && (
+                            <button
+                              onClick={() => openEditModal(race)}
+                              className="text-blue-500 hover:text-blue-300 text-xs font-semibold flex items-center space-x-1"
+                              title="Edit Detail Lomba"
                             >
-                              <Instagram className="w-3 h-3" />
-                            </a>
+                              <Pencil className="w-4 h-4" />
+                              <span>Edit</span>
+                            </button>
+                          )}
+
+                          {/* Tombol Daftar */}
+                          <button
+                            onClick={() => openRegistrationModal(race)}
+                            className="text-yellow-400 hover:text-yellow-300 text-xs font-semibold flex items-center space-x-1"
+                          >
+                            <Plus className="w-3 h-3" />
+                            <span>Daftar</span>
+                          </button>
+
+                          {/* Tautan Tambahan */}
+                          {(race.organizer_url || race.instagram_url) && (
+                            <div className="flex space-x-2 mt-1">
+                              {race.organizer_url && (
+                                <a
+                                  href={race.organizer_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-gray-500 hover:text-gray-300 text-xs flex items-center"
+                                  title="Situs Resmi"
+                                >
+                                  <ExternalLink className="w-3 h-3" />
+                                </a>
+                              )}
+                              {race.instagram_url && (
+                                <a
+                                  href={race.instagram_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-gray-500 hover:text-gray-300 text-xs flex items-center"
+                                  title="Instagram"
+                                >
+                                  <Instagram className="w-3 h-3" />
+                                </a>
+                              )}
+                            </div>
                           )}
                         </div>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
 
