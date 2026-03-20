@@ -48,8 +48,8 @@ const Header = () => {
         {/* 2. Navigasi Desktop (Sembunyi di mobile, Tampil di md ke atas) */}
         <nav className="space-x-6 hidden md:flex items-center">
           <NavItem title="Home" to="/" />
-          <NavItem title="Acara Lari" to="/events" />
-          <NavItem title="Anggota" to="/members" />
+          {/* <NavItem title="Acara Lari" to="/events" /> */}
+          {/* <NavItem title="Anggota" to="/members" /> */}
           <NavItem title="Race List" to="/races" /> {/* Ditambahkan */}
         </nav>
 
