@@ -1,9 +1,9 @@
 import React from "react";
-import RaceList from "../components/RaceList";
+import RaceList from "../components/Races/RaceList";
 
 const RaceListPage = () => {
   return (
-    <div className="bg-slate-950 pt-4 pb-12 px-6">
+    <div className="min-h-screen bg-slate-950 pt-4 pb-12 px-6">
       <div className="container mx-auto max-w-4xl">
         <header className="mb-10">
           <h1 className="text-3xl md:text-4xl font-black text-white tracking-tighter uppercase leading-tight">
