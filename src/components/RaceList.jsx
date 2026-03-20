@@ -1,994 +1,429 @@
-// src/components/RaceList.jsx
-import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { supabase } from "../utils/supabaseClient";
+import React, { useState } from "react";
 import {
-  MapPin,
   Calendar,
-  ExternalLink,
-  Instagram,
-  Plus,
+  MapPin,
+  ChevronRight,
+  Trophy,
+  Clock,
+  CheckCircle2,
+  Users,
   X,
-  Search,
-  Pencil, // Icon untuk Edit
 } from "lucide-react";
 
-// --- Komponen Kartu Lomba Mobile: RaceCardMobile ---
-const RaceCardMobile = ({
-  race,
-  isAdmin,
-  openEditModal,
-  openRegistrationModal,
-  openParticipantsModal,
-  formatDate,
-}) => (
-  <div className="bg-gray-800 p-4 rounded-lg shadow-lg border border-gray-700 space-y-3">
-    {/* Header Lomba */}
-    <div className="flex justify-between items-start">
-      <div className="flex-1 min-w-0">
-        <div className="text-xl font-bold text-blue-400 truncate">
-          {race.name}
-        </div>
-        <div className="text-sm text-gray-400 mt-1 flex items-center space-x-2">
-          <MapPin className="w-3 h-3 text-gray-500 flex-shrink-0" />
-          <span className="truncate">{race.location}</span>
-        </div>
-      </div>
-      <div className="text-right flex-shrink-0 ml-3">
-        <div className="text-sm font-semibold text-yellow-400">
-          {formatDate(race.date)}
-        </div>
-      </div>
-    </div>
+const RaceList = () => {
+  const [activeTab, setActiveTab] = useState("upcoming");
+  const [selectedRace, setSelectedRace] = useState(null); // State untuk Modal
 
-    {/* Kategori */}
-    <div className="border-t border-gray-700 pt-2">
-      <p className="text-xs text-gray-400 mb-1">Kategori:</p>
-      <div className="flex flex-wrap gap-1">
-        {race.categories.map((category, idx) => (
-          <span
-            key={idx}
-            className="px-2 py-0.5 bg-green-900 text-green-300 rounded-md text-xs font-bold"
-          >
-            {category}
-          </span>
-        ))}
-      </div>
-    </div>
+  const dummyRaces = [
+    // --- UPCOMING RACES (Masa Depan) ---
+    {
+      id: 1,
+      name: "3One Internal Fun Run",
+      date: "2026-03-25",
+      location: "GBK, Jakarta",
+      categories: ["5K", "10K"],
+      participants: 4,
+      members: [
+        { name: "Rohmat", cat: "10K" },
+        { name: "Adit", cat: "5K" },
+        { name: "Siska", cat: "5K" },
+        { name: "Dewi", cat: "10K" },
+      ],
+    },
+    {
+      id: 2,
+      name: "Bali 10K Summer Run",
+      date: "2026-05-10",
+      location: "Kuta, Bali",
+      categories: ["10K"],
+      participants: 3,
+      members: [
+        { name: "Budi", cat: "10K" },
+        { name: "Santi", cat: "10K" },
+        { name: "Hendrik", cat: "10K" },
+      ],
+    },
+    {
+      id: 3,
+      name: "Surabaya Heritage Run",
+      date: "2026-07-05",
+      location: "Tugu Pahlawan, Surabaya",
+      categories: ["5K", "10K"],
+      participants: 5,
+      members: [
+        { name: "Robby", cat: "10K" },
+        { name: "Maya", cat: "5K" },
+        { name: "Fajar", cat: "10K" },
+        { name: "Anton", cat: "5K" },
+        { name: "Sari", cat: "10K" },
+      ],
+    },
+    {
+      id: 4,
+      name: "Bandung Ultra Marathon",
+      date: "2026-06-15",
+      location: "Lembang, Bandung",
+      categories: ["Ultra", "50K", "100K"],
+      participants: 2,
+      members: [
+        { name: "Gilang", cat: "50K" },
+        { name: "Hendra", cat: "100K" },
+      ],
+    },
+    {
+      id: 5,
+      name: "Mandalika Coast Run",
+      date: "2026-09-20",
+      location: "Lombok, NTB",
+      categories: ["10K", "HM"],
+      participants: 3,
+      members: [
+        { name: "Putu", cat: "HM" },
+        { name: "Made", cat: "10K" },
+        { name: "Nyoman", cat: "HM" },
+      ],
+    },
 
-    {/* Peserta & Link */}
-    <div className="flex justify-between items-center border-t border-gray-700 pt-3">
-      <div className="flex flex-col">
-        <div className="text-sm text-white font-medium">
-          {race.registrations ? race.registrations.length : 0} Anggota
-        </div>
-        {race.registrations && race.registrations.length > 0 && (
-          <button
-            onClick={() => openParticipantsModal(race)}
-            className="text-blue-400 hover:text-blue-300 text-xs font-semibold mt-1 text-left"
-          >
-            Lihat Peserta Detail
-          </button>
-        )}
-      </div>
+    // --- PAST RACES (DONE) ---
+    {
+      id: 6,
+      name: "Borobudur Marathon 2024",
+      date: "2024-12-01",
+      location: "Magelang, Jawa Tengah",
+      categories: ["10K", "HM", "FM"],
+      participants: 6,
+      members: [
+        { name: "Rohmat", cat: "FM" },
+        { name: "Adit", cat: "FM" },
+        { name: "Budi", cat: "HM" },
+        { name: "Siti", cat: "HM" },
+        { name: "Eko", cat: "10K" },
+        { name: "Agus", cat: "10K" },
+      ],
+    },
+    {
+      id: 7,
+      name: "Jakarta Half Marathon",
+      date: "2024-10-20",
+      location: "Monas, Jakarta",
+      categories: ["5K", "10K", "HM"],
+      participants: 4,
+      members: [
+        { name: "Andi", cat: "HM" },
+        { name: "Rina", cat: "10K" },
+        { name: "Doni", cat: "HM" },
+        { name: "Lia", cat: "5K" },
+      ],
+    },
+    {
+      id: 8,
+      name: "Pocari Sweat Run 2024",
+      date: "2024-07-21",
+      location: "Gedung Sate, Bandung",
+      categories: ["5K", "10K", "HM", "FM"],
+      participants: 8,
+      members: [
+        { name: "Rohmat", cat: "HM" },
+        { name: "Siska", cat: "10K" },
+        { name: "Fifi", cat: "5K" },
+        { name: "Gani", cat: "FM" },
+        { name: "Hilda", cat: "HM" },
+        { name: "Irfan", cat: "10K" },
+        { name: "Joko", cat: "FM" },
+        { name: "Kiki", cat: "5K" },
+      ],
+    },
+    {
+      id: 9,
+      name: "Maybank Marathon Bali 2024",
+      date: "2024-08-25",
+      location: "Gianyar, Bali",
+      categories: ["10K", "HM", "FM"],
+      participants: 3,
+      members: [
+        { name: "Luthfi", cat: "FM" },
+        { name: "Mona", cat: "HM" },
+        { name: "Nanda", cat: "10K" },
+      ],
+    },
+    {
+      id: 10,
+      name: "Semarang 10K",
+      date: "2024-12-15",
+      location: "Kota Lama, Semarang",
+      categories: ["10K"],
+      participants: 2,
+      members: [
+        { name: "Oky", cat: "10K" },
+        { name: "Prita", cat: "10K" },
+      ],
+    },
+    {
+      id: 11,
+      name: "BFI Run 2024",
+      date: "2024-06-23",
+      location: "BSD City, Tangerang",
+      categories: ["5K", "10K", "HM"],
+      participants: 3,
+      members: [
+        { name: "Qori", cat: "HM" },
+        { name: "Rendy", cat: "10K" },
+        { name: "Sari", cat: "5K" },
+      ],
+    },
+    {
+      id: 12,
+      name: "LPS Monas Half Marathon",
+      date: "2024-06-30",
+      location: "Monas, Jakarta",
+      categories: ["HM"],
+      participants: 2,
+      members: [
+        { name: "Tono", cat: "HM" },
+        { name: "Uli", cat: "HM" },
+      ],
+    },
+    {
+      id: 13,
+      name: "Samosir Music International Run",
+      date: "2024-08-10",
+      location: "Pangururan, Samosir",
+      categories: ["5K", "10K"],
+      participants: 2,
+      members: [
+        { name: "Vino", cat: "10K" },
+        { name: "Wanda", cat: "5K" },
+      ],
+    },
+    {
+      id: 14,
+      name: "Solo Batik Marathon",
+      date: "2024-05-12",
+      location: "Manahan, Solo",
+      categories: ["10K", "HM", "FM"],
+      participants: 3,
+      members: [
+        { name: "Xena", cat: "FM" },
+        { name: "Yanto", cat: "HM" },
+        { name: "Zizi", cat: "10K" },
+      ],
+    },
+  ];
 
-      {/* Action Buttons (Link Organizer & IG) */}
-      <div className="flex space-x-3">
-        {race.organizer_url && (
-          <a
-            href={race.organizer_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-gray-500 hover:text-gray-300 text-xs flex items-center"
-            title="Situs Resmi"
-          >
-            <ExternalLink className="w-4 h-4" />
-          </a>
-        )}
-        {race.instagram_url && (
-          <a
-            href={race.instagram_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-gray-500 hover:text-gray-300 text-xs flex items-center"
-            title="Instagram"
-          >
-            <Instagram className="w-4 h-4" />
-          </a>
-        )}
-      </div>
-    </div>
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
-    {/* Primary Actions (Daftar & Edit) */}
-    <div className="flex justify-end space-x-2 pt-3 border-t border-gray-700">
-      {isAdmin && (
+  const filteredRaces = dummyRaces.filter((race) => {
+    const raceDate = new Date(race.date);
+    return activeTab === "upcoming" ? raceDate >= today : raceDate < today;
+  });
+
+  const groupedRaces = filteredRaces
+    .sort((a, b) =>
+      activeTab === "upcoming"
+        ? new Date(a.date) - new Date(b.date)
+        : new Date(b.date) - new Date(a.date)
+    )
+    .reduce((groups, race) => {
+      const date = new Date(race.date);
+      const monthYear = date.toLocaleDateString("id-ID", {
+        month: "long",
+        year: "numeric",
+      });
+      if (!groups[monthYear]) groups[monthYear] = [];
+      groups[monthYear].push(race);
+      return groups;
+    }, {});
+
+  return (
+    <div className="space-y-8">
+      {/* TABS */}
+      <div className="flex p-1 bg-slate-900/50 border border-slate-800 rounded-xl w-fit">
         <button
-          onClick={() => openEditModal(race)}
-          className="px-3 py-1 bg-blue-600 text-white rounded text-xs font-semibold flex items-center space-x-1 hover:bg-blue-500 transition"
+          onClick={() => setActiveTab("upcoming")}
+          className={`flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-bold transition-all ${
+            activeTab === "upcoming"
+              ? "bg-blue-600 text-white shadow-lg shadow-blue-900/20"
+              : "text-slate-400 hover:text-white"
+          }`}
         >
-          <Pencil className="w-3 h-3" />
-          <span>Edit</span>
+          <Clock size={16} /> Upcoming
         </button>
-      )}
-      <button
-        onClick={() => openRegistrationModal(race)}
-        className="px-3 py-1 bg-yellow-500 text-gray-900 rounded text-xs font-semibold flex items-center space-x-1 hover:bg-yellow-400 transition"
-      >
-        <Plus className="w-3 h-3" />
-        <span>Daftar</span>
-      </button>
-    </div>
-  </div>
-);
-
-// --- Komponen Modal Pendaftaran Baru: RegistrationModal ---
-const RegistrationModal = ({
-  isOpen,
-  onClose,
-  race,
-  members,
-  onRegisterSuccess,
-}) => {
-  const [selectedMemberId, setSelectedMemberId] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [registerError, setRegisterError] = useState(null);
-
-  useEffect(() => {
-    if (isOpen && race && race.categories.length > 0) {
-      setSelectedCategory(race.categories[0]);
-    }
-    if (isOpen && members.length > 0) {
-      setSelectedMemberId(members[0].id);
-    } else if (isOpen && members.length === 0) {
-      setRegisterError(
-        "Tidak dapat mendaftar: Data Anggota (Profiles) kosong."
-      );
-    }
-  }, [isOpen, race, members]);
-
-  if (!isOpen || !race) return null;
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setRegisterError(null);
-
-    if (!selectedMemberId) {
-      setRegisterError("Nama member wajib dipilih.");
-      setLoading(false);
-      return;
-    }
-
-    if (!selectedCategory) {
-      setRegisterError("Kategori wajib dipilih.");
-      setLoading(false);
-      return;
-    }
-
-    const insertData = {
-      race_id: race.id,
-      member_id: selectedMemberId,
-      category_joined: selectedCategory,
-    };
-
-    const { error } = await supabase
-      .from("race_registrations")
-      .insert([insertData])
-      .select()
-      .maybeSingle();
-
-    if (error && error.code !== "23505") {
-      console.error("Error registering:", error);
-      setRegisterError(`Gagal mendaftar: ${error.message}`);
-    } else if (error && error.code === "23505") {
-      const memberNick =
-        members.find((m) => m.id === selectedMemberId)?.nick_name ||
-        "Anggota ini";
-      setRegisterError(
-        `${memberNick} sudah terdaftar untuk kategori ${selectedCategory} di lomba ini.`
-      );
-    } else {
-      setRegisterError(null);
-      onRegisterSuccess();
-      onClose();
-    }
-    setLoading(false);
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-900 p-8 rounded-xl shadow-2xl max-w-sm w-full border border-yellow-400">
-        <div className="flex justify-between items-start mb-4">
-          <h3 className="text-xl font-bold text-yellow-400">
-            Daftar: {race.name}
-          </h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-white">
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
-        <p className="text-sm text-gray-400 mb-6">
-          Pilih nama Anda dan kategori lari yang diikuti.
-        </p>
-
-        {registerError && (
-          <div className="p-3 mb-4 bg-red-900 text-red-300 rounded text-sm">
-            {registerError}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit}>
-          {/* Input Member/Nama */}
-          <div className="mb-4">
-            <label
-              htmlFor="member"
-              className="block text-gray-300 text-sm font-semibold mb-2"
-            >
-              Nama Member (Nick Name)
-            </label>
-            <select
-              id="member"
-              value={selectedMemberId}
-              onChange={(e) => setSelectedMemberId(e.target.value)}
-              required
-              className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-blue-400 focus:border-blue-400"
-              disabled={members.length === 0}
-            >
-              {members.length === 0 ? (
-                <option value="">Memuat Anggota...</option>
-              ) : (
-                members.map((member) => (
-                  <option key={member.id} value={member.id}>
-                    {member.nick_name}
-                  </option>
-                ))
-              )}
-            </select>
-          </div>
-
-          {/* Input Kategori */}
-          <div className="mb-6">
-            <label
-              htmlFor="category"
-              className="block text-gray-300 text-sm font-semibold mb-2"
-            >
-              Pilih Kategori
-            </label>
-            <select
-              id="category"
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              required
-              className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-blue-400 focus:border-blue-400"
-            >
-              {race.categories.map((category) => (
-                <option key={category} value={category}>
-                  {category}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex justify-end space-x-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-6 py-2 border border-gray-600 text-gray-300 rounded-lg hover:bg-gray-700 transition"
-              disabled={loading}
-            >
-              Batal
-            </button>
-            <button
-              type="submit"
-              className="px-6 py-2 bg-yellow-500 text-gray-900 font-bold rounded-lg hover:bg-yellow-400 transition disabled:bg-gray-500"
-              disabled={loading || members.length === 0}
-            >
-              {loading ? "Mendaftar..." : "Konfirmasi Daftar"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
-
-// --- Komponen Modal Tambah/Edit Lomba: RaceModal (FIXED SCROLL) ---
-const RaceModal = ({ isOpen, onClose, onSaveOrUpdate, initialRaceData }) => {
-  const isEditing = !!initialRaceData;
-  const [raceData, setRaceData] = useState({
-    name: "",
-    location: "",
-    date: "",
-    categories: "",
-    organizer_url: "",
-    instagram_url: "",
-  });
-  const [loading, setLoading] = useState(false);
-  const [saveError, setSaveError] = useState(null);
-
-  useEffect(() => {
-    if (initialRaceData) {
-      setRaceData({
-        name: initialRaceData.name,
-        location: initialRaceData.location,
-        date: initialRaceData.date,
-        categories: initialRaceData.categories
-          ? initialRaceData.categories.join(", ")
-          : "",
-        organizer_url: initialRaceData.organizer_url || "",
-        instagram_url: initialRaceData.instagram_url || "",
-      });
-    } else {
-      setRaceData({
-        name: "",
-        location: "",
-        date: "",
-        categories: "",
-        organizer_url: "",
-        instagram_url: "",
-      });
-    }
-  }, [initialRaceData]);
-
-  if (!isOpen) return null;
-
-  const handleChange = (e) => {
-    setRaceData({ ...raceData, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setSaveError(null);
-
-    const categoriesArray = raceData.categories
-      .split(",")
-      .map((c) => c.trim())
-      .filter((c) => c !== "");
-
-    if (categoriesArray.length === 0) {
-      setSaveError("Kategori Lomba wajib diisi. Pisahkan dengan koma.");
-      setLoading(false);
-      return;
-    }
-
-    const payload = {
-      name: raceData.name,
-      location: raceData.location,
-      date: raceData.date,
-      categories: categoriesArray,
-      organizer_url: raceData.organizer_url || null,
-      instagram_url: raceData.instagram_url || null,
-    };
-
-    let error;
-
-    if (isEditing) {
-      // OPERASI UPDATE
-      const response = await supabase
-        .from("races")
-        .update(payload)
-        .eq("id", initialRaceData.id);
-      error = response.error;
-    } else {
-      // OPERASI INSERT (Tambah Baru)
-      const response = await supabase.from("races").insert([payload]);
-      error = response.error;
-    }
-
-    if (error) {
-      console.error("Error saving race:", error);
-      setSaveError(`Gagal menyimpan lomba: ${error.message}`);
-    } else {
-      setSaveError(null);
-      onSaveOrUpdate();
-      onClose(); // Menutup dan mereset melalui close handler di parent
-    }
-    setLoading(false);
-  };
-
-  return (
-    // Wrapper Modal: Memungkinkan scroll pada modal itu sendiri
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      {/* Konten Modal: Batasi tinggi dan tambahkan overflow-y-auto */}
-      {/* NOTE: scrollbar-hide harus didefinisikan di src/index.css */}
-      <div className="bg-gray-900 p-8 rounded-xl shadow-2xl max-w-lg w-full border border-blue-400 max-h-[90vh] my-auto overflow-y-auto scrollbar-hide">
-        <h3 className="text-2xl font-bold text-blue-400 mb-4">
-          {isEditing ? `${initialRaceData.name}` : "Tambah Race Baru"}
-        </h3>
-        <p className="text-sm text-gray-400 mb-6">
-          Masukkan detail lomba. Kategori harus dipisahkan dengan koma (Contoh:
-          5K, 10K, HM, FM).
-        </p>
-
-        {saveError && (
-          <div className="p-3 mb-4 bg-red-900 text-red-300 rounded text-sm">
-            {saveError}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit}>
-          {/* Nama Lomba */}
-          <div className="mb-4">
-            <label
-              htmlFor="name"
-              className="block text-gray-300 text-sm font-semibold mb-2"
-            >
-              Nama Lomba
-            </label>
-            <input
-              type="text"
-              id="name"
-              name="name"
-              value={raceData.name}
-              onChange={handleChange}
-              required
-              className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-blue-400 focus:border-blue-400"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            {/* Lokasi */}
-            <div>
-              <label
-                htmlFor="location"
-                className="block text-gray-300 text-sm font-semibold mb-2"
-              >
-                Lokasi
-              </label>
-              <input
-                type="text"
-                id="location"
-                name="location"
-                value={raceData.location}
-                onChange={handleChange}
-                required
-                className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-blue-400 focus:border-blue-400"
-              />
-            </div>
-
-            {/* Tanggal */}
-            <div>
-              <label
-                htmlFor="date"
-                className="block text-gray-300 text-sm font-semibold mb-2"
-              >
-                Tanggal
-              </label>
-              <input
-                type="date"
-                id="date"
-                name="date"
-                value={raceData.date}
-                onChange={handleChange}
-                required
-                className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-blue-400 focus:border-blue-400"
-              />
-            </div>
-          </div>
-
-          {/* Kategori */}
-          <div className="mb-4">
-            <label
-              htmlFor="categories"
-              className="block text-gray-300 text-sm font-semibold mb-2"
-            >
-              Kategori (Pisahkan dengan koma)
-            </label>
-            <input
-              type="text"
-              id="categories"
-              name="categories"
-              value={raceData.categories}
-              onChange={handleChange}
-              placeholder="Contoh: 5K, 10K, HM, FM"
-              required
-              className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-blue-400 focus:border-blue-400"
-            />
-          </div>
-
-          {/* Organizer URL (NEW FIELD) */}
-          <div className="mb-4">
-            <label
-              htmlFor="organizer_url"
-              className="block text-gray-300 text-sm font-semibold mb-2"
-            >
-              Link Situs Resmi (URL)
-            </label>
-            <input
-              type="url"
-              id="organizer_url"
-              name="organizer_url"
-              value={raceData.organizer_url}
-              onChange={handleChange}
-              placeholder="https://www.lomba.com"
-              className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-blue-400 focus:border-blue-400"
-            />
-          </div>
-
-          {/* Instagram URL (NEW FIELD) */}
-          <div className="mb-6">
-            <label
-              htmlFor="instagram_url"
-              className="block text-gray-300 text-sm font-semibold mb-2"
-            >
-              Instagram (URL)
-            </label>
-            <input
-              type="url"
-              id="instagram_url"
-              name="instagram_url"
-              value={raceData.instagram_url}
-              onChange={handleChange}
-              placeholder="https://instagram.com/nama_lomba"
-              className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-blue-400 focus:border-blue-400"
-            />
-          </div>
-
-          <div className="flex justify-end space-x-3 mt-4">
-            {/* Menambahkan margin top pada tombol */}
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-6 py-2 border border-gray-600 text-gray-300 rounded-lg hover:bg-gray-700 transition"
-              disabled={loading}
-            >
-              Batal
-            </button>
-            <button
-              type="submit"
-              className="px-6 py-2 bg-blue-500 text-white font-bold rounded-lg hover:bg-blue-600 transition disabled:bg-gray-500"
-              disabled={loading}
-            >
-              {loading
-                ? "Menyimpan..."
-                : isEditing
-                ? "Update Lomba"
-                : "Simpan Lomba"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
-
-// --- Komponen Modal Daftar Peserta Baru: ParticipantsModal (UPDATED SCROLLBAR HIDE) ---
-const ParticipantsModal = ({ isOpen, onClose, race }) => {
-  if (!isOpen || !race) return null;
-
-  const participants = race.registrations || [];
-
-  // 1. Group participants by category_joined
-  const groupedParticipants = participants.reduce((acc, registration) => {
-    const category = registration.category_joined;
-    if (!acc[category]) {
-      acc[category] = [];
-    }
-    acc[category].push(registration);
-    return acc;
-  }, {});
-
-  // 2. Get sorted categories (Custom sort: FM, HM, lalu alphabetical)
-  const categories = Object.keys(groupedParticipants).sort((a, b) => {
-    // Priority 1: Full Marathon (FM)
-    if (
-      a.toLowerCase().includes("marathon") &&
-      !a.toLowerCase().includes("half")
-    )
-      return -1;
-    if (
-      b.toLowerCase().includes("marathon") &&
-      !b.toLowerCase().includes("half")
-    )
-      return 1;
-
-    // Priority 2: Half Marathon (HM)
-    if (a.toLowerCase().includes("half marathon")) return -1;
-    if (b.toLowerCase().includes("half marathon")) return 1;
-
-    // Priority 3: Alphabetical sort for others
-    return a.localeCompare(b);
-  });
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-      {/* Konten Modal: Tambahkan 'scrollbar-hide' */}
-      <div className="bg-gray-900 p-8 rounded-xl shadow-2xl max-w-lg w-full border border-yellow-400 max-h-[90vh] my-auto overflow-y-auto scrollbar-hide">
-        <div className="flex justify-between items-start mb-4">
-          <h3 className="text-xl font-bold text-yellow-400">{race.name}</h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-white">
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
-        {participants.length === 0 ? (
-          <p className="text-gray-400">
-            Belum ada anggota yang mendaftar untuk lomba ini.
-          </p>
-        ) : (
-          <>
-            <p className="text-sm text-gray-300 mb-4">
-              Total {participants.length} anggota terdaftar.
-            </p>
-            {/* Konten yang bisa di scroll: Tambahkan 'scrollbar-hide' */}
-            <div className="space-y-4 max-h-80 overflow-y-auto pr-2 scrollbar-hide">
-              {categories.map((category) => (
-                <div key={category}>
-                  {/* Kategori Badge (Ukuran Lebih Besar) */}
-                  <span className="inline-block px-3 py-1 bg-blue-900 text-lg font-extrabold text-blue-300 rounded-lg mb-2">
-                    {category} ({groupedParticipants[category].length})
-                  </span>
-
-                  {/* Daftar Anggota (Flex Layout dengan Badge Nama) */}
-                  <div className="flex flex-wrap gap-2 pt-1">
-                    {groupedParticipants[category].map((p, index) => (
-                      <span
-                        key={index}
-                        className="px-2 py-0.5 bg-gray-700 text-white text-sm rounded-full shadow-sm hover:bg-gray-600 transition"
-                      >
-                        {p.member.nick_name}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </>
-        )}
-
-        <div className="mt-6 flex justify-end">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
-          >
-            Tutup
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// --- Komponen Utama: RaceList (UPDATED: Vertical Action Column) ---
-const RaceList = ({ session }) => {
-  const [races, setRaces] = useState([]);
-  const [members, setMembers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingRace, setEditingRace] = useState(null);
-
-  const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
-  const [selectedRace, setSelectedRace] = useState(null);
-
-  const [isParticipantsModalOpen, setIsParticipantsModalOpen] = useState(false);
-  const [participantsRace, setParticipantsRace] = useState(null);
-
-  const [searchQuery, setSearchQuery] = useState("");
-
-  const formatDate = (dateString) => {
-    try {
-      const options = { day: "numeric", month: "short", year: "numeric" };
-      const date = new Date(dateString);
-      return date.toLocaleDateString("id-ID", options);
-    } catch {
-      return dateString;
-    }
-  };
-
-  const closeRaceModal = () => {
-    setIsModalOpen(false);
-    setEditingRace(null);
-  };
-
-  const openAddModal = () => {
-    setEditingRace(null);
-    setIsModalOpen(true);
-  };
-
-  const openEditModal = (race) => {
-    setEditingRace(race);
-    setIsModalOpen(true);
-  };
-
-  const openRegistrationModal = (race) => {
-    if (members.length > 0) {
-      setSelectedRace(race);
-      setIsRegisterModalOpen(true);
-    } else {
-      alert("Gagal memuat data member. Tidak dapat melanjutkan pendaftaran.");
-    }
-  };
-
-  const openParticipantsModal = (race) => {
-    setParticipantsRace(race);
-    setIsParticipantsModalOpen(true);
-  };
-
-  // --- Fungsi Fetch Members (Tidak Berubah) ---
-  const fetchMembers = useCallback(async () => {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("id, nick_name")
-      .order("nick_name", { ascending: true });
-
-    if (error) {
-      console.error("Error fetching members:", error.message);
-      setMembers([]);
-    } else {
-      setMembers(data);
-    }
-  }, []);
-
-  // --- Fungsi Fetch Races (Tidak Berubah) ---
-  const fetchRaces = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-
-    let query = supabase.from("races").select(`
-          id,
-          name,
-          date,
-          location,
-          categories,
-          organizer_url,   
-          instagram_url,   
-          registrations:race_registrations (
-            category_joined,
-            member:profiles ( nick_name )
-          )
-        `);
-
-    if (searchQuery) {
-      const queryTerm = `%${searchQuery}%`;
-      query = query.or(`name.ilike.${queryTerm},location.ilike.${queryTerm}`);
-    }
-
-    const { data, error } = await query.order("date", { ascending: true });
-
-    if (error) {
-      console.error("Error fetching races:", error.message);
-      setError(
-        `Gagal memuat data lomba: ${error.message}. Pastikan RLS dikonfigurasi.`
-      );
-      setRaces([]);
-    } else {
-      setRaces(
-        data.filter((race) => race.categories && race.categories.length > 0)
-      );
-    }
-    setLoading(false);
-  }, [searchQuery]);
-
-  useEffect(() => {
-    fetchMembers();
-    fetchRaces();
-  }, [fetchRaces, fetchMembers]);
-
-  // Cek apakah user sudah login (sebagai admin sementara)
-  const isAdmin = !!session;
-
-  return (
-    <div className="max-w-7xl mx-auto">
-      {/* Tombol Add Race dan Search Bar */}
-      <div className="flex flex-wrap gap-4 mb-8 justify-between items-end">
-        {/* Kontrol Search Bar */}
-        <div className="relative flex-grow max-w-sm">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
-          <input
-            type="text"
-            placeholder="Cari lomba berdasarkan nama atau lokasi..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full p-3 pl-10 border border-blue-900 bg-gray-800 text-white rounded-lg focus:ring-blue-400 focus:border-blue-400"
-          />
-        </div>
-
-        {/* Tombol Add Race (CONDITIONAL) */}
-        {isAdmin && (
-          <button
-            onClick={openAddModal}
-            className="px-6 py-2 bg-yellow-500 text-gray-900 font-bold rounded-lg hover:bg-yellow-400 transition shadow-lg flex items-center space-x-2"
-          >
-            <Plus className="w-5 h-5" />
-            <span>Tambah Race Baru</span>
-          </button>
-        )}
+        <button
+          onClick={() => setActiveTab("done")}
+          className={`flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-bold transition-all ${
+            activeTab === "done"
+              ? "bg-blue-600 text-white shadow-lg shadow-blue-900/20"
+              : "text-slate-400 hover:text-white"
+          }`}
+        >
+          <CheckCircle2 size={16} /> Done
+        </button>
       </div>
 
-      {/* Daftar Lomba (Table Layout) */}
-      <div className="w-full overflow-x-auto bg-gray-800 rounded-lg shadow-xl">
-        {loading && (
-          <p className="text-center p-8 text-blue-400 animate-pulse">
-            Memuat daftar lomba dari database...
-          </p>
-        )}
+      {/* GRID CONTAINER */}
+      <div className="space-y-12">
+        {Object.keys(groupedRaces).length > 0 ? (
+          Object.keys(groupedRaces).map((monthYear) => (
+            <div key={monthYear} className="space-y-5">
+              <div className="flex items-center gap-4">
+                <h2 className="text-blue-500 font-bold text-xs uppercase tracking-[0.2em] whitespace-nowrap">
+                  {monthYear}
+                </h2>
+                <div className="h-[1px] w-full bg-slate-800/50"></div>
+              </div>
 
-        {!loading && error && (
-          <p className="text-center p-8 text-red-500">{error}</p>
-        )}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {groupedRaces[monthYear].map((race) => (
+                  <div
+                    key={race.id}
+                    onClick={() => setSelectedRace(race)} // Buka Modal
+                    className="group relative flex flex-col justify-between p-5 rounded-2xl border border-slate-800/50 bg-slate-900/40 hover:bg-slate-800/60 hover:border-blue-500/30 transition-all cursor-pointer shadow-sm"
+                  >
+                    <div className="flex items-start gap-4 mb-4">
+                      <div className="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center bg-blue-600/10 text-blue-500 group-hover:bg-blue-600 group-hover:text-white transition-all">
+                        <Trophy size={16} />
+                      </div>
 
-        {/* PESAN JIKA TIDAK DITEMUKAN SETELAH SEARCH */}
-        {!loading && races.length === 0 && !error && (
-          <p className="text-center p-8 text-gray-400">
-            Race tidak ditemukan. Silakan tambah race baru.
-          </p>
-        )}
-
-        {!loading && races.length > 0 && (
-          <>
-            {/* Tampilan Mobile: Kartu (Hidden MD:BLOCK) */}
-            <div className="md:hidden space-y-6">
-              {races.map((race) => (
-                <RaceCardMobile
-                  key={race.id}
-                  race={race}
-                  isAdmin={isAdmin}
-                  openEditModal={openEditModal}
-                  openRegistrationModal={openRegistrationModal}
-                  openParticipantsModal={openParticipantsModal}
-                  formatDate={formatDate}
-                />
-              ))}
-            </div>
-
-            {/* Tampilan Desktop: Tabel (HIDDEN MD:BLOCK) */}
-            <div className="hidden md:block w-full overflow-x-auto bg-gray-800 rounded-lg shadow-xl">
-              <table className="min-w-full divide-y divide-gray-700">
-                <thead className="bg-gray-700">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                      Lomba
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                      Kategori
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                      Peserta
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                      Aksi
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-700">
-                  {races.map((race) => (
-                    <tr
-                      key={race.id}
-                      className="hover:bg-gray-700 transition duration-150"
-                    >
-                      {/* Kolom Lomba */}
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-blue-400">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-bold text-sm md:text-base text-white group-hover:text-blue-400 transition-colors truncate">
                           {race.name}
-                        </div>
-                        <div className="text-xs text-gray-400 mt-1 flex items-center space-x-2">
-                          <MapPin className="w-3 h-3 text-gray-500" />
-                          <span>{race.location}</span>
-                          <Calendar className="w-3 h-3 text-gray-500 ml-2" />
-                          <span>{formatDate(race.date)}</span>
-                        </div>
-                      </td>
+                        </h3>
 
-                      {/* Kolom Kategori */}
-                      <td className="px-6 py-4">
-                        <div className="flex flex-wrap gap-1">
-                          {race.categories.map((category, idx) => (
+                        <div className="flex flex-wrap gap-1 mt-1.5">
+                          {race.categories.map((cat, index) => (
                             <span
-                              key={idx}
-                              className="px-2 py-0.5 bg-green-900 text-green-300 rounded-md text-xs font-bold"
+                              key={index}
+                              className={`text-[8px] px-1.5 py-0.5 rounded font-bold border ${
+                                activeTab === "upcoming"
+                                  ? "bg-blue-500/10 text-blue-400 border-blue-500/20"
+                                  : "bg-slate-800 text-slate-500 border-slate-700"
+                              }`}
                             >
-                              {category}
+                              {cat}
                             </span>
                           ))}
                         </div>
-                      </td>
+                      </div>
+                    </div>
 
-                      {/* Kolom Peserta */}
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-white mb-1">
-                          {race.registrations ? race.registrations.length : 0}{" "}
-                          Anggota
-                        </div>
-                        {race.registrations &&
-                          race.registrations.length > 0 && (
-                            <button
-                              onClick={() => openParticipantsModal(race)}
-                              className="text-blue-400 hover:text-blue-300 text-xs font-semibold"
-                            >
-                              Lihat Anggota
-                            </button>
-                          )}
-                      </td>
+                    <div className="flex items-end justify-between border-t border-slate-800/50 pt-4 mt-auto">
+                      <div className="space-y-1.5">
+                        <span className="flex items-center text-slate-400 text-[11px] md:text-xs">
+                          <Calendar className="w-3 h-3 mr-2 text-blue-500" />
+                          {new Date(race.date).toLocaleDateString("id-ID", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </span>
+                        <span className="flex items-center text-slate-400 text-[11px] md:text-xs">
+                          <MapPin className="w-3 h-3 mr-2 text-blue-500" />
+                          {race.location}
+                        </span>
+                      </div>
 
-                      {/* Kolom Aksi (VERTICALLY STACKED) */}
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex flex-col space-y-2 items-start">
-                          {/* Tombol Edit (Hanya tampil jika Admin Login) */}
-                          {isAdmin && (
-                            <button
-                              onClick={() => openEditModal(race)}
-                              className="text-blue-500 hover:text-blue-300 text-xs font-semibold flex items-center space-x-1"
-                              title="Edit Detail Lomba"
-                            >
-                              <Pencil className="w-4 h-4" />
-                              <span>Edit</span>
-                            </button>
-                          )}
+                      <div className="flex flex-col items-end">
+                        <span className="text-white font-bold text-sm leading-none">
+                          {race.participants}
+                        </span>
+                        <span className="text-slate-500 text-[9px] uppercase font-bold tracking-tighter">
+                          Runners
+                        </span>
+                      </div>
+                    </div>
 
-                          {/* Tombol Daftar */}
-                          <button
-                            onClick={() => openRegistrationModal(race)}
-                            className="text-yellow-400 hover:text-yellow-300 text-xs font-semibold flex items-center space-x-1"
-                          >
-                            <Plus className="w-3 h-3" />
-                            <span>Daftar</span>
-                          </button>
-
-                          {/* Tautan Tambahan */}
-                          {(race.organizer_url || race.instagram_url) && (
-                            <div className="flex space-x-2 mt-1">
-                              {race.organizer_url && (
-                                <a
-                                  href={race.organizer_url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-gray-500 hover:text-gray-300 text-xs flex items-center"
-                                  title="Situs Resmi"
-                                >
-                                  <ExternalLink className="w-3 h-3" />
-                                </a>
-                              )}
-                              {race.instagram_url && (
-                                <a
-                                  href={race.instagram_url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-gray-500 hover:text-gray-300 text-xs flex items-center"
-                                  title="Instagram"
-                                >
-                                  <Instagram className="w-3 h-3" />
-                                </a>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                    <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <ChevronRight size={16} className="text-blue-500" />
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-          </>
+          ))
+        ) : (
+          <div className="text-center py-20 bg-slate-900/20 rounded-3xl border border-dashed border-slate-800">
+            <p className="text-slate-500 italic">Belum ada jadwal lomba.</p>
+          </div>
         )}
       </div>
 
-      {/* Modal Tambah/Edit Lomba */}
-      <RaceModal
-        isOpen={isModalOpen}
-        onClose={closeRaceModal}
-        onSaveOrUpdate={fetchRaces}
-        initialRaceData={editingRace}
-      />
+      {/* MODAL DETAIL */}
+      {selectedRace && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          {/* Overlay */}
+          <div
+            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            onClick={() => setSelectedRace(null)}
+          ></div>
 
-      {/* Modal Pendaftaran Lomba */}
-      <RegistrationModal
-        isOpen={isRegisterModalOpen}
-        onClose={() => setIsRegisterModalOpen(false)}
-        race={selectedRace}
-        members={members}
-        onRegisterSuccess={fetchRaces}
-      />
+          {/* Content */}
+          <div className="relative w-full max-w-lg bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="p-6 border-b border-slate-800 flex justify-between items-start">
+              <div>
+                <h2 className="text-xl font-bold text-white mb-1">
+                  {selectedRace.name}
+                </h2>
+                <p className="text-sm text-slate-400 flex items-center gap-2">
+                  <MapPin size={14} className="text-blue-500" />{" "}
+                  {selectedRace.location}
+                </p>
+              </div>
+              <button
+                onClick={() => setSelectedRace(null)}
+                className="p-2 hover:bg-slate-800 rounded-full text-slate-400 transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
 
-      {/* Modal Daftar Peserta */}
-      <ParticipantsModal
-        isOpen={isParticipantsModalOpen}
-        onClose={() => setIsParticipantsModalOpen(false)}
-        race={participantsRace}
-      />
+            <div className="p-6">
+              <div className="flex items-center gap-2 mb-6">
+                <Users size={18} className="text-blue-500" />
+                <span className="text-sm font-bold text-white uppercase tracking-wider">
+                  Lineup Pelari ({selectedRace.members?.length || 0})
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar">
+                {selectedRace.members?.map((member, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center justify-between p-3 rounded-xl bg-slate-800/40 border border-slate-800"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold text-white uppercase">
+                        {member.name.charAt(0)}
+                      </div>
+                      <span className="font-semibold text-slate-200">
+                        {member.name}
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-bold px-2 py-1 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 uppercase">
+                      {member.cat}
+                    </span>
+                  </div>
+                ))}
+
+                {!selectedRace.members?.length && (
+                  <p className="text-slate-500 text-center py-4 italic">
+                    Belum ada anggota yang terdaftar.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-slate-800 bg-slate-900/50">
+              <button
+                onClick={() => setSelectedRace(null)}
+                className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-colors uppercase text-sm"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
