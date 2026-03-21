@@ -184,7 +184,7 @@ const RaceModal = ({ race, onClose, onRefresh }) => {
 
           <div className="px-8 pt-14 pb-8 flex-1">
             <div className="mb-6">
-              <h2 className="text-2xl font-black text-white mb-2 leading-tight tracking-tight">
+              <h2 className="text-2xl font-black text-white mb-2 leading-tight tracking-tight uppercase">
                 {race.name}
               </h2>
               <div className="flex flex-wrap gap-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">
@@ -199,57 +199,65 @@ const RaceModal = ({ race, onClose, onRefresh }) => {
             </div>
 
             {/* --- ACTION ICONS ROW (INI YANG SEMPAT ILANG) --- */}
-            <div className="flex flex-wrap items-center gap-3 mb-10 bg-slate-800/30 p-4 rounded-[2rem] border border-slate-800/50">
-              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2 mr-2">
-                Links
-              </span>
-              <div className="flex gap-2">
-                {race.website_url && (
-                  <a
-                    href={race.website_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="w-10 h-10 flex items-center justify-center bg-white text-black rounded-xl hover:bg-blue-400 transition-all shadow-lg"
-                    title="Website"
-                  >
-                    <ExternalLink size={18} />
-                  </a>
-                )}
-                {race.social_url && (
-                  <a
-                    href={`https://${race.social_url.replace("https://", "")}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="w-10 h-10 flex items-center justify-center bg-slate-800 text-white border border-slate-700 rounded-xl hover:border-blue-500/50 transition-all"
-                    title="Instagram"
-                  >
-                    <Instagram size={18} />
-                  </a>
-                )}
-                {race.result_url && (
-                  <a
-                    href={race.result_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="w-10 h-10 flex items-center justify-center bg-blue-600 text-white rounded-xl hover:bg-blue-500 transition-all shadow-lg"
-                    title="Results"
-                  >
-                    <Award size={18} />
-                  </a>
-                )}
-                {race.doc_url && (
-                  <a
-                    href={race.doc_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="w-10 h-10 flex items-center justify-center bg-slate-800 text-white border border-slate-700 rounded-xl hover:border-blue-500/50 transition-all"
-                    title="Documentation"
-                  >
-                    <ImageIcon size={18} />
-                  </a>
-                )}
+            {(race.website_url ||
+              race.social_url ||
+              race.result_url ||
+              race.doc_url) && (
+              <div className="flex flex-wrap items-center gap-3 mb-10 bg-slate-800/30 p-4 rounded-[2rem] border border-slate-800/50">
+                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2 mr-2">
+                  Links
+                </span>
+                <div className="flex gap-2">
+                  {race.website_url && (
+                    <a
+                      href={race.website_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="w-10 h-10 flex items-center justify-center bg-white text-black rounded-xl hover:bg-blue-400 transition-all shadow-lg"
+                      title="Website"
+                    >
+                      <ExternalLink size={18} />
+                    </a>
+                  )}
+                  {race.social_url && (
+                    <a
+                      href={`https://${race.social_url.replace(
+                        "https://",
+                        ""
+                      )}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="w-10 h-10 flex items-center justify-center bg-slate-800 text-white border border-slate-700 rounded-xl hover:border-blue-500/50 transition-all"
+                      title="Instagram"
+                    >
+                      <Instagram size={18} />
+                    </a>
+                  )}
+                  {race.result_url && (
+                    <a
+                      href={race.result_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="w-10 h-10 flex items-center justify-center bg-blue-600 text-white rounded-xl hover:bg-blue-500 transition-all shadow-lg"
+                      title="Results"
+                    >
+                      <Award size={18} />
+                    </a>
+                  )}
+                  {race.doc_url && (
+                    <a
+                      href={race.doc_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="w-10 h-10 flex items-center justify-center bg-slate-800 text-white border border-slate-700 rounded-xl hover:border-blue-500/50 transition-all"
+                      title="Documentation"
+                    >
+                      <ImageIcon size={18} />
+                    </a>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="space-y-6">
               <div className="flex items-center justify-between">
@@ -302,12 +310,12 @@ const RaceModal = ({ race, onClose, onRefresh }) => {
 
                     <div className="max-h-48 overflow-y-auto pr-2 custom-scrollbar">
                       {filteredMembers.length > 0 ? (
-                        <div className="grid grid-cols-2 gap-2 pb-1">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 pb-1">
                           {filteredMembers.map((m) => (
                             <div
                               key={m.id}
                               onClick={() => setSelectedMember(m)}
-                              className={`flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer ${
+                              className={`flex items-center justify-center p-3 rounded-xl border transition-all cursor-pointer ${
                                 selectedMember?.id === m.id
                                   ? "bg-blue-600 border-blue-400"
                                   : "bg-slate-900 border-slate-700 hover:border-slate-500"
