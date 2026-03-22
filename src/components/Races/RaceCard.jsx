@@ -63,9 +63,9 @@ const RaceCard = ({ race, onClick, onEdit }) => {
             <Calendar className="w-3 h-3 mr-1.5 text-blue-500/70" />
             {formatDateRange(race.date, race.end_date)}
           </div>
-          <div className="flex items-center text-slate-500 text-[10px] font-bold truncate">
+          <div className="flex items-center text-slate-500 text-[10px] font-bold">
             <MapPin className="w-3 h-3 mr-1.5 text-blue-500/70" />
-            {race.location.split(",")[0]} {/* Ambil kota saja agar ringkas */}
+            {race.location}
           </div>
         </div>
       </div>
