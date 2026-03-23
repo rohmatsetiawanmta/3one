@@ -50,8 +50,14 @@ const AuthPage = () => {
 
       if (result.status === "success") {
         if (isLogin) {
-          localStorage.setItem("user_session", JSON.stringify(result.data));
-          navigate("/");
+          localStorage.setItem(
+            "user_session",
+            JSON.stringify({
+              id: result.data.id,
+              token: result.data.session_token,
+            })
+          );
+          window.location.href = "/";
           window.location.reload();
         } else {
           setSuccess(
@@ -65,6 +71,7 @@ const AuthPage = () => {
       }
     } catch (err) {
       setError("Kesalahan koneksi ke server");
+      console.log("Error during authentication:", err);
     } finally {
       setLoading(false);
     }

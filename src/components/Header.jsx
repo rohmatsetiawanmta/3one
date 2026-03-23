@@ -40,10 +40,31 @@ const Header = ({ user }) => {
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   const closeMenu = () => setIsMenuOpen(false);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    const savedSession = localStorage.getItem("user_session");
+
+    if (savedSession) {
+      try {
+        const { id } = JSON.parse(savedSession);
+
+        await fetch(`${import.meta.env.VITE_API_BASE_URL}?resource=logout`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-TOKEN": import.meta.env.VITE_SECRET_TOKEN,
+          },
+          body: JSON.stringify({ id }),
+        });
+      } catch (error) {
+        console.error("Gagal logout di server:", error);
+      }
+    }
+
     localStorage.removeItem("user_session");
-    closeMenu();
-    window.location.href = "/";
+    setUser(null);
+
+    window.location.href = "/auth";
+    window.location.reload();
   };
 
   return (
