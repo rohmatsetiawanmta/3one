@@ -1,5 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import Home from "./pages/Home";
@@ -8,6 +13,10 @@ import MembersPage from "./pages/MembersPage";
 import AuthPage from "./pages/AuthPage";
 import EditProfilePage from "./pages/EditProfilePage";
 import RaceHistoryPage from "./pages/RaceHistoryPage";
+
+// Admin Pages
+import UserManagement from "./pages/admin/UserManagement";
+import ResultManagement from "./pages/admin/ResultManagement";
 
 const App = () => {
   const [user, setUser] = useState(null);
@@ -34,6 +43,23 @@ const App = () => {
           <Route
             path="/race-history"
             element={<RaceHistoryPage user={user} />}
+          />
+
+          <Route
+            path="/admin/users"
+            element={
+              user?.role === "admin" ? <UserManagement /> : <Navigate to="/" />
+            }
+          />
+          <Route
+            path="/admin/results"
+            element={
+              user?.role === "admin" ? (
+                <ResultManagement />
+              ) : (
+                <Navigate to="/" />
+              )
+            }
           />
         </Routes>
       </main>

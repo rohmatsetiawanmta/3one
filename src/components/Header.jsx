@@ -106,8 +106,9 @@ const Header = ({ user }) => {
                   />
                 </button>
 
-                {/* Dropdown Menu */}
-                <div className="absolute top-full right-0 mt-2 w-48 bg-slate-950 border border-white/10 rounded-2xl py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all shadow-2xl z-[130]">
+                {/* Di dalam Dropdown Menu Header.jsx */}
+                <div className="absolute top-full right-0 mt-2 w-56 bg-slate-950 border border-white/10 rounded-2xl py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all shadow-2xl z-[130]">
+                  {/* MENU BIASA (SEMUA USER) */}
                   <Link
                     to="/edit-profile"
                     className="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
@@ -126,6 +127,36 @@ const Header = ({ user }) => {
                       Race History
                     </span>
                   </Link>
+
+                  {/* SEKSI ADMIN (Hanya jika user.role === 'admin') */}
+                  {user.role === "admin" && (
+                    <>
+                      <div className="border-t border-white/5 my-1"></div>
+                      <div className="px-4 py-2 text-[9px] font-black text-blue-500 uppercase tracking-[0.3em] opacity-50">
+                        Admin Management
+                      </div>
+
+                      <Link
+                        to="/admin/users"
+                        className="flex items-center gap-3 px-4 py-2.5 text-slate-400 hover:text-blue-400 hover:bg-blue-500/5 transition-colors"
+                      >
+                        <Users size={16} />
+                        <span className="text-[10px] font-black uppercase tracking-widest">
+                          User Management
+                        </span>
+                      </Link>
+                      <Link
+                        to="/admin/results"
+                        className="flex items-center gap-3 px-4 py-2.5 text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/5 transition-colors"
+                      >
+                        <Trophy size={16} />
+                        <span className="text-[10px] font-black uppercase tracking-widest">
+                          Result Management
+                        </span>
+                      </Link>
+                    </>
+                  )}
+
                   <div className="border-t border-white/5 my-1"></div>
                   <button
                     onClick={handleLogout}

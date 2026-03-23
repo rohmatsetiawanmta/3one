@@ -317,7 +317,7 @@ const RaceHistoryPage = ({ user }) => {
                               </div>
                             ) : (
                               <div className="text-[9px] text-slate-600 uppercase font-black tracking-widest italic opacity-50">
-                                Pending Time
+                                No result data
                               </div>
                             )}
                             {race.bib_number && (
