@@ -13,6 +13,7 @@ import {
   Settings,
   History,
   ChevronDown,
+  Clock,
 } from "lucide-react";
 
 const Header = ({ user }) => {
@@ -44,9 +45,9 @@ const Header = ({ user }) => {
     const savedSession = localStorage.getItem("user_session");
 
     if (savedSession) {
-      try {
-        const { id } = JSON.parse(savedSession);
+      const { id } = JSON.parse(savedSession);
 
+      try {
         await fetch(`${import.meta.env.VITE_API_BASE_URL}?resource=logout`, {
           method: "POST",
           headers: {
@@ -55,16 +56,17 @@ const Header = ({ user }) => {
           },
           body: JSON.stringify({ id }),
         });
-      } catch (error) {
-        console.error("Gagal logout di server:", error);
+      } catch (e) {
+        console.error("Server logout failed", e);
       }
     }
 
+    // 2. Bersihkan local storage
     localStorage.removeItem("user_session");
-    setUser(null);
 
+    // 3. PAKSA REFRESH & REDIRECT
+    // Ini yang bikin efeknya sama kayak pas login (semua state bersih)
     window.location.href = "/auth";
-    window.location.reload();
   };
 
   return (
@@ -167,12 +169,30 @@ const Header = ({ user }) => {
                         </span>
                       </Link>
                       <Link
+                        to="/admin/races"
+                        className="flex items-center gap-3 px-4 py-2.5 text-slate-400 hover:text-blue-400 hover:bg-blue-500/5 transition-colors"
+                      >
+                        <Settings size={16} />
+                        <span className="text-[10px] font-black uppercase tracking-widest">
+                          Race Management
+                        </span>
+                      </Link>
+                      <Link
                         to="/admin/results"
                         className="flex items-center gap-3 px-4 py-2.5 text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/5 transition-colors"
                       >
                         <Trophy size={16} />
                         <span className="text-[10px] font-black uppercase tracking-widest">
                           Result Management
+                        </span>
+                      </Link>
+                      <Link
+                        to="/admin/logs"
+                        className="flex items-center gap-3 px-4 py-2.5 text-slate-400 hover:text-amber-400 hover:bg-amber-500/5 transition-colors"
+                      >
+                        <Clock size={16} />
+                        <span className="text-[10px] font-black uppercase tracking-widest">
+                          Activity Logs
                         </span>
                       </Link>
                     </>

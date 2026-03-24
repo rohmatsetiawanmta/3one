@@ -13,80 +13,32 @@ import {
   UserPlus,
   Check,
   Search,
-  PlusCircle,
+  Loader2,
+  Image,
+  Globe,
 } from "lucide-react";
 
-const RaceModal = ({ race, onClose, onRefresh }) => {
+const RaceModal = ({ race, onClose, onRefresh, user }) => {
+  // --- STATE MANAGEMENT ---
   const [showJoinForm, setShowJoinForm] = useState(false);
-  const [allMembers, setAllMembers] = useState([]);
-  const [search, setSearch] = useState("");
-  const [selectedMember, setSelectedMember] = useState(null);
   const [selectedCat, setSelectedCat] = useState(race?.categories?.[0] || "");
   const [submitting, setSubmitting] = useState(false);
 
+  // API Config
   const API_URL = import.meta.env.VITE_API_BASE_URL;
   const SECRET_TOKEN = import.meta.env.VITE_SECRET_TOKEN;
 
-  useEffect(() => {
-    if (showJoinForm) {
-      const fetchMembers = async () => {
-        try {
-          const res = await fetch(`${API_URL}?resource=members`, {
-            headers: { "X-TOKEN": SECRET_TOKEN },
-          });
-          const result = await res.json();
-          if (result.status === "success") setAllMembers(result.data);
-        } catch (err) {
-          console.error(err);
-        }
-      };
-      fetchMembers();
-    }
-  }, [showJoinForm, API_URL, SECRET_TOKEN]);
-
   if (!race) return null;
 
-  const isPast =
-    new Date(race.end_date || race.date) < new Date().setHours(0, 0, 0, 0);
+  const isPastRace = new Date(race.date) < new Date().setHours(0, 0, 0, 0);
 
-  const handleCloseTrigger = (e) => {
-    if (e) {
-      if (typeof e.preventDefault === "function") e.preventDefault();
-      if (typeof e.stopPropagation === "function") e.stopPropagation();
-    }
-    onClose();
-  };
-
-  const formatDateRange = (start, end) => {
-    const s = new Date(start);
-    if (!end || start === end)
-      return s.toLocaleDateString("id-ID", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      });
-    const e = new Date(end);
-    if (s.getMonth() === e.getMonth())
-      return `${s.getDate()} - ${e.getDate()} ${s.toLocaleDateString("id-ID", {
-        month: "long",
-        year: "numeric",
-      })}`;
-    return `${s.toLocaleDateString("id-ID", {
-      day: "numeric",
-      month: "short",
-    })} - ${e.toLocaleDateString("id-ID", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    })}`;
-  };
-
-  const handleJoinSubmit = async (e) => {
-    if (e) e.preventDefault();
-    if (!selectedMember || !selectedCat) return;
+  // Handler Join Race (Logika Baru: Otomatis sesuai user session)
+  const handleJoinSubmit = async () => {
+    if (!user || submitting) return;
     setSubmitting(true);
+
     try {
-      const response = await fetch(`${API_URL}?resource=registrations`, {
+      const response = await fetch(`${API_URL}?resource=join_race`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -94,48 +46,57 @@ const RaceModal = ({ race, onClose, onRefresh }) => {
         },
         body: JSON.stringify({
           race_id: race.id,
-          member_id: selectedMember.id,
+          user_id: user.id, // Ambil dari props user (App.jsx)
+          token: user.session_token, // Validasi keamanan server
           category: selectedCat,
         }),
       });
+
       const result = await response.json();
       if (result.status === "success") {
+        alert(`Berhasil mendaftar ke kategori ${selectedCat}!`);
         setShowJoinForm(false);
-        setSelectedMember(null);
         if (onRefresh) onRefresh();
       } else {
-        alert(result.message);
+        alert(result.message || "Gagal bergabung");
       }
+    } catch (error) {
+      console.error("Error joining race:", error);
+      alert("Terjadi kesalahan koneksi");
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
+      {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/90 backdrop-blur-md"
-        onClick={handleCloseTrigger}
+        className="absolute inset-0 bg-black/90 backdrop-blur-md animate-in fade-in duration-300"
+        onClick={onClose}
       ></div>
 
-      <div className="relative w-full max-w-xl bg-slate-900 border border-slate-800 rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in">
+      {/* Modal Container */}
+      <div className="relative w-full max-w-xl bg-slate-900 border border-slate-800 rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in duration-300 flex flex-col max-h-[90vh]">
+        {/* Absolute Close Button */}
         <button
-          type="button"
-          onClick={handleCloseTrigger}
-          className="absolute top-6 right-6 p-2 bg-black/30 hover:bg-black/50 backdrop-blur-md rounded-full text-white z-50"
+          onClick={onClose}
+          className="absolute top-6 right-6 p-2 bg-black/30 hover:bg-black/50 backdrop-blur-md rounded-full text-white transition-all z-50"
         >
           <X size={20} />
         </button>
 
-        <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col">
+        {/* Scrollable Area */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col bg-slate-900/50">
+          {/* Header Banner Area (UI AWAL) */}
           <div
-            className={`h-40 shrink-0 bg-gradient-to-br ${
-              isPast
+            className={`h-36 shrink-0 bg-gradient-to-br ${
+              isPastRace
                 ? "from-slate-700 to-slate-900"
                 : "from-blue-600 to-blue-900"
             } relative`}
           >
-            <div className="absolute -bottom-10 left-8 w-24 h-24 rounded-[2rem] bg-slate-900 border-4 border-slate-900 overflow-hidden shadow-2xl z-10">
+            <div className="absolute -bottom-10 left-8 w-20 h-20 rounded-3xl bg-slate-900 border-4 border-slate-900 overflow-hidden shadow-xl z-10">
               {race.logo_url ? (
                 <img
                   src={race.logo_url}
@@ -144,31 +105,34 @@ const RaceModal = ({ race, onClose, onRefresh }) => {
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-slate-800">
-                  <Trophy size={32} className="text-slate-600" />
+                  <Trophy
+                    className={isPastRace ? "text-slate-500" : "text-blue-500"}
+                  />
                 </div>
               )}
             </div>
           </div>
 
-          <div className="px-8 pt-16 pb-8 flex-1">
-            <h2 className="text-2xl font-black text-white mb-3 tracking-tight uppercase">
-              {race.name}
-            </h2>
-
-            <div className="flex flex-wrap gap-4 text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6">
-              <span className="flex items-center gap-2 bg-slate-800/50 px-3 py-2 rounded-xl text-slate-300">
-                <Calendar size={14} className="text-blue-500" />{" "}
-                {formatDateRange(race.date, race.end_date)}
-              </span>
-              <span className="flex items-center gap-2 bg-slate-800/50 px-3 py-2 rounded-xl text-slate-300">
-                <MapPin size={14} className="text-blue-500" /> {race.location}
-              </span>
+          <div className="px-8 pt-14 pb-8 flex-1">
+            {/* Race Info */}
+            <div className="mb-6">
+              <h2 className="text-2xl font-black text-white mb-2 leading-tight tracking-tight uppercase italic">
+                {race.name}
+              </h2>
+              <div className="flex flex-wrap gap-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                <span className="flex items-center gap-2">
+                  <Calendar size={14} className="text-blue-500" /> {race.date}
+                </span>
+                <span className="flex items-center gap-2">
+                  <MapPin size={14} className="text-blue-500" /> {race.location}
+                </span>
+              </div>
             </div>
 
-            {/* --- KUMPULAN LINK YANG KEMBALI DISINI --- */}
-            <div className="flex flex-wrap items-center gap-3 mb-10 bg-slate-800/30 p-4 rounded-[2rem] border border-slate-800/50 shadow-inner">
-              <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-2 mr-1">
-                Event Links
+            {/* Action Icons Row */}
+            <div className="flex flex-wrap items-center gap-3 mb-10 bg-slate-800/30 p-4 rounded-[2rem] border border-slate-800/50">
+              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2 mr-2">
+                Links
               </span>
               <div className="flex gap-2">
                 {race.website_url && (
@@ -176,14 +140,14 @@ const RaceModal = ({ race, onClose, onRefresh }) => {
                     href={race.website_url}
                     target="_blank"
                     rel="noreferrer"
-                    className="w-10 h-10 flex items-center justify-center bg-white text-black rounded-xl hover:bg-blue-400 transition-all shadow-lg"
+                    className="w-10 h-10 flex items-center justify-center bg-slate-800 text-white border border-slate-700 rounded-xl hover:border-blue-500/50 transition-all"
                   >
-                    <ExternalLink size={18} />
+                    <Globe size={18} />
                   </a>
                 )}
                 {race.social_url && (
                   <a
-                    href={`https://${race.social_url.replace("https://", "")}`}
+                    href={race.social_url}
                     target="_blank"
                     rel="noreferrer"
                     className="w-10 h-10 flex items-center justify-center bg-slate-800 text-white border border-slate-700 rounded-xl hover:border-blue-500/50 transition-all"
@@ -206,149 +170,121 @@ const RaceModal = ({ race, onClose, onRefresh }) => {
                     href={race.doc_url}
                     target="_blank"
                     rel="noreferrer"
-                    className="w-10 h-10 flex items-center justify-center bg-slate-800 text-white border border-slate-700 rounded-xl hover:border-blue-500/50 transition-all"
+                    className="w-10 h-10 flex items-center justify-center bg-blue-600 text-white rounded-xl hover:bg-blue-500 transition-all shadow-lg"
                   >
-                    <ImageIcon size={18} />
+                    <Image size={18} />
                   </a>
                 )}
               </div>
             </div>
 
+            {/* Lineup & Join Section */}
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Users size={18} className="text-blue-500" />
-                  <span className="text-[10px] font-black text-white uppercase tracking-[0.2em]">
-                    Lineup
+                  <span className="text-xs font-black text-white uppercase tracking-[0.2em]">
+                    3One Lineup
                   </span>
                 </div>
-                {!showJoinForm && !isPast && (
+                {!showJoinForm && !isPastRace && user && (
                   <button
-                    type="button"
                     onClick={() => setShowJoinForm(true)}
-                    className="px-4 py-2 bg-blue-600 text-white text-[9px] font-black rounded-xl uppercase tracking-widest shadow-lg hover:bg-blue-500 transition-all"
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-black rounded-xl transition-all uppercase tracking-widest shadow-lg shadow-blue-900/20"
                   >
-                    Join Race
+                    <UserPlus size={14} /> Join Race
                   </button>
                 )}
               </div>
 
+              {/* Inline Join Form (LOGIKA BARU - HANYA PILIH KATEGORI) */}
               {showJoinForm ? (
-                <div className="bg-slate-800/30 border border-blue-500/20 rounded-[2rem] p-6 space-y-6 animate-in fade-in duration-300">
+                <div className="bg-slate-800/40 border border-blue-500/20 rounded-[2rem] p-6 space-y-6 animate-in slide-in-from-top-4 duration-300">
                   <div className="flex justify-between items-center">
-                    <h3 className="text-[9px] font-black text-blue-400 uppercase tracking-widest">
-                      Select Runner
+                    <h3 className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em]">
+                      Confirm Registration
                     </h3>
                     <button
-                      type="button"
                       onClick={() => setShowJoinForm(false)}
-                      className="text-slate-600 text-[9px] font-black uppercase"
+                      className="text-slate-500 hover:text-white text-[10px] font-black uppercase"
                     >
                       Cancel
                     </button>
                   </div>
-                  <div className="relative">
-                    <Search
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
-                      size={14}
-                    />
-                    <input
-                      type="text"
-                      placeholder="Search runner..."
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl py-3 pl-10 pr-4 text-xs text-white outline-none focus:border-blue-500 transition-all"
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                    />
+
+                  <div className="p-4 bg-slate-900 border border-slate-800 rounded-2xl">
+                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">
+                      Registering as
+                    </p>
+                    <p className="text-xs font-bold text-white uppercase italic">
+                      {user?.member_name}
+                    </p>
                   </div>
-                  <div className="max-h-48 overflow-y-auto grid grid-cols-4 gap-2 custom-scrollbar pr-1">
-                    {allMembers
-                      .filter((m) =>
-                        m.full_name.toLowerCase().includes(search.toLowerCase())
-                      )
-                      .map((m) => (
-                        <div
-                          key={m.id}
-                          onClick={() => setSelectedMember(m)}
-                          className={`p-3 rounded-xl border cursor-pointer transition-all text-center justify-center ${
-                            selectedMember?.id === m.id
-                              ? "bg-blue-600 border-blue-400 shadow-lg"
-                              : "bg-slate-900 border-slate-700"
-                          }`}
-                        >
-                          <span className="text-[10px] font-bold text-white truncate block">
-                            {m.full_name}
-                          </span>
-                        </div>
-                      ))}
-                  </div>
+
+                  {/* Select Category */}
                   <div className="space-y-3">
-                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">
-                      Category
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
+                      Choose Category
                     </label>
                     <div className="flex flex-wrap gap-2">
-                      {race.categories?.map((cat) => {
-                        const isJoined = race.members?.some(
-                          (m) =>
-                            m.name === selectedMember?.full_name &&
-                            m.cat === cat
-                        );
-                        return (
-                          <button
-                            key={cat}
-                            type="button"
-                            disabled={isJoined}
-                            onClick={() => setSelectedCat(cat)}
-                            className={`px-4 py-2 rounded-xl text-[9px] font-black border transition-all ${
-                              isJoined
-                                ? "bg-slate-800 text-slate-600 cursor-not-allowed"
-                                : selectedCat === cat
-                                ? "bg-white text-black border-white"
-                                : "bg-slate-900 text-slate-400 border-slate-700"
-                            }`}
-                          >
-                            {cat} {isJoined && "✓"}
-                          </button>
-                        );
-                      })}
+                      {race.categories?.map((cat) => (
+                        <button
+                          key={cat}
+                          onClick={() => setSelectedCat(cat)}
+                          className={`px-4 py-2 rounded-xl text-[10px] font-black transition-all border ${
+                            selectedCat === cat
+                              ? "bg-white text-black border-white"
+                              : "bg-slate-900 text-slate-400 border-slate-700 hover:border-slate-500"
+                          }`}
+                        >
+                          {cat}
+                        </button>
+                      ))}
                     </div>
                   </div>
+
                   <button
-                    disabled={!selectedMember || submitting}
-                    type="button"
+                    disabled={submitting}
                     onClick={handleJoinSubmit}
-                    className="w-full py-4 bg-blue-600 text-white font-black rounded-2xl text-[10px] uppercase tracking-widest shadow-xl shadow-blue-900/20"
+                    className="w-full py-4 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 text-white font-black rounded-2xl text-[10px] uppercase tracking-widest transition-all shadow-xl shadow-blue-900/40 flex items-center justify-center gap-2"
                   >
+                    {submitting ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <Check size={14} />
+                    )}
                     {submitting ? "Processing..." : "Confirm Join"}
                   </button>
                 </div>
               ) : (
+                /* Lineup List Grouped by Category (UI AWAL) */
                 <div className="space-y-8">
                   {race.participants > 0 ? (
-                    race.categories?.map((cat) => {
+                    race.categories?.map((category) => {
                       const membersInCat = race.members?.filter(
-                        (m) => m.cat === cat
+                        (m) => (m.category || m.cat) === category
                       );
                       if (!membersInCat || membersInCat.length === 0)
                         return null;
                       return (
-                        <div key={cat} className="space-y-3">
+                        <div key={category} className="space-y-3">
                           <div className="flex items-center gap-3">
-                            <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">
-                              {cat}
+                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                              {category}
                             </span>
                             <div className="h-[1px] flex-1 bg-slate-800/50"></div>
                           </div>
                           <div className="grid grid-cols-2 gap-3">
-                            {membersInCat.map((m, i) => (
+                            {membersInCat.map((member, i) => (
                               <div
                                 key={i}
-                                className="flex items-center gap-3 p-3 rounded-2xl bg-slate-800/30 border border-slate-700/30"
+                                className="flex items-center gap-3 p-3 rounded-2xl bg-slate-800/40 border border-slate-700/30 group hover:bg-slate-800/60 transition-colors"
                               >
-                                <div className="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center text-[10px] font-black text-white">
-                                  {m.name.charAt(0)}
+                                <div className="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center text-[10px] font-black text-white uppercase shadow-lg shadow-blue-900/40">
+                                  {member.name.charAt(0)}
                                 </div>
-                                <span className="font-bold text-slate-300 text-xs truncate">
-                                  {m.name}
+                                <span className="font-bold text-slate-200 text-xs truncate">
+                                  {member.name}
                                 </span>
                               </div>
                             ))}
@@ -357,9 +293,10 @@ const RaceModal = ({ race, onClose, onRefresh }) => {
                       );
                     })
                   ) : (
-                    <div className="py-12 border border-dashed border-slate-800 rounded-[2rem] text-center bg-slate-900/20">
-                      <p className="text-slate-600 text-[11px] italic tracking-wide">
-                        No runners joined yet.
+                    <div className="flex flex-col items-center justify-center py-12 px-6 rounded-[2.5rem] border border-dashed border-slate-800 bg-slate-900/50">
+                      <Info size={24} className="text-slate-700 mb-2" />
+                      <p className="text-slate-500 text-[11px] font-medium italic text-center uppercase tracking-widest">
+                        Lineup is currently empty
                       </p>
                     </div>
                   )}
@@ -369,11 +306,12 @@ const RaceModal = ({ race, onClose, onRefresh }) => {
           </div>
         </div>
 
-        <div className="p-6 border-t border-slate-800 bg-slate-900/50 backdrop-blur-md">
+        {/* Static Footer */}
+        <div className="p-6 border-t border-slate-800 bg-slate-900 shrink-0">
           <button
             type="button"
-            onClick={handleCloseTrigger}
-            className="w-full py-4 bg-slate-800 hover:bg-slate-700 text-white font-black rounded-2xl transition-all uppercase text-[10px] tracking-[0.2em]"
+            onClick={onClose}
+            className="w-full py-4 bg-slate-800 hover:bg-slate-700 text-white font-black rounded-2xl transition-colors uppercase text-[10px] tracking-[0.2em]"
           >
             Close Detail
           </button>

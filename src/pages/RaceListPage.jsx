@@ -1,7 +1,7 @@
 import React from "react";
 import RaceList from "../components/Races/RaceList";
 
-const RaceListPage = () => {
+const RaceListPage = ({ user }) => {
   return (
     <div className="min-h-screen bg-slate-950 pt-4 pb-12 px-6">
       <div className="container mx-auto max-w-4xl">
@@ -20,7 +20,7 @@ const RaceListPage = () => {
           </div>
         </header>
 
-        <RaceList />
+        <RaceList user={user} />
       </div>
     </div>
   );

@@ -1,44 +1,56 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   X,
   Save,
   Calendar,
   MapPin,
-  Instagram,
-  Link,
-  Image as ImageIcon,
-  Award,
+  Trophy,
   Plus,
-  Tag,
+  Layers,
+  Globe,
+  Instagram,
+  FileText,
+  ExternalLink,
+  Loader2,
+  Edit3,
+  Upload,
+  Image as ImageIcon,
+  Trash2,
 } from "lucide-react";
 
 const RaceForm = ({ onClose, onRaceSaved, initialData }) => {
-  const [isMultiDay, setIsMultiDay] = useState(false);
-  const [loading, setLoading] = useState(false);
-
   const [formData, setFormData] = useState({
     name: "",
     date: "",
     end_date: "",
     location: "",
-    categories: [],
     website_url: "",
     social_url: "",
-    logo_url: "",
     result_url: "",
     doc_url: "",
     description: "",
+    categories: [],
   });
 
-  const [newCat, setNewCat] = useState("");
+  const [logoFile, setLogoFile] = useState(null);
+  const [logoPreview, setLogoPreview] = useState("");
+  const [newCategory, setNewCategory] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
+  const fileInputRef = useRef(null);
+  const API_URL = import.meta.env.VITE_API_BASE_URL;
+  const SECRET_TOKEN = import.meta.env.VITE_SECRET_TOKEN;
+
+  // Sync initialData saat mode Edit
   useEffect(() => {
     if (initialData) {
       setFormData({
-        ...initialData,
-        logo_url: initialData.logo_url || "",
+        name: initialData.name || "",
+        date: initialData.date || "",
+        end_date: initialData.end_date || "",
+        location: initialData.location || "",
         website_url: initialData.website_url || "",
-        social_url: initialData.social_url || "",
+        social_url: initialData.social_url || initialData.ig_url || "",
         result_url: initialData.result_url || "",
         doc_url: initialData.doc_url || "",
         description: initialData.description || "",
@@ -46,341 +58,357 @@ const RaceForm = ({ onClose, onRaceSaved, initialData }) => {
           ? initialData.categories
           : [],
       });
-      setIsMultiDay(!!initialData.end_date);
+      setLogoPreview(initialData.logo_url || "");
     }
   }, [initialData]);
 
+  // Handle Preview Gambar
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      alert("File harus berupa gambar!");
+      return;
+    }
+
+    setLogoFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => setLogoPreview(reader.result);
+    reader.readAsDataURL(file);
+  };
+
   const addCategory = () => {
-    if (newCat && !formData.categories.includes(newCat)) {
+    if (
+      newCategory.trim() &&
+      !formData.categories.includes(newCategory.trim())
+    ) {
       setFormData({
         ...formData,
-        categories: [...formData.categories, newCat],
+        categories: [...formData.categories, newCategory.trim()],
       });
-      setNewCat("");
+      setNewCategory("");
     }
+  };
+
+  const removeCategory = (cat) => {
+    setFormData({
+      ...formData,
+      categories: formData.categories.filter((c) => c !== cat),
+    });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    setSubmitting(true);
 
-    const API_URL = import.meta.env.VITE_API_BASE_URL;
-    const SECRET_TOKEN = import.meta.env.VITE_SECRET_TOKEN;
+    const adminUser = JSON.parse(localStorage.getItem("user_session"));
 
-    const dataToSend = {
-      ...formData,
-      end_date: isMultiDay ? formData.end_date : null,
-    };
+    // Gunakan FormData untuk mengirim File + Text
+    const data = new FormData();
+    data.append("name", formData.name);
+    data.append("date", formData.date);
+    data.append("end_date", formData.end_date);
+    data.append("location", formData.location);
+    data.append("website_url", formData.website_url);
+    data.append("social_url", formData.social_url);
+    data.append("result_url", formData.result_url);
+    data.append("doc_url", formData.doc_url);
+    data.append("description", formData.description);
+    data.append("categories", JSON.stringify(formData.categories));
+    data.append("user_id", adminUser?.id);
+
+    if (initialData?.id) data.append("id", initialData.id);
+    if (logoFile) data.append("logo_file", logoFile);
 
     try {
-      const method = initialData ? "PUT" : "POST";
-      const url = initialData
-        ? `${API_URL}?resource=races&id=${initialData.id}`
-        : `${API_URL}?resource=races`;
-
-      const res = await fetch(url, {
-        method,
+      const response = await fetch(`${API_URL}?resource=races`, {
+        method: "POST",
         headers: {
-          "Content-Type": "application/json",
           "X-TOKEN": SECRET_TOKEN,
         },
-        body: JSON.stringify(dataToSend),
+        body: data,
       });
 
-      const result = await res.json();
+      const result = await response.json();
       if (result.status === "success") {
         onRaceSaved();
         onClose();
       } else {
         alert(result.message);
       }
-    } catch (err) {
-      console.error(err);
+    } catch (error) {
+      console.error("Submission error:", error);
+      alert("Terjadi kesalahan sistem.");
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[250] flex items-center justify-center p-4">
+      {/* Backdrop with Heavy Blur */}
       <div
-        className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+        className="absolute inset-0 bg-slate-950/40 backdrop-blur-xl transition-all"
         onClick={onClose}
-      ></div>
-      <div className="relative w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-[2.5rem] shadow-2xl flex flex-col max-h-[90vh] overflow-hidden animate-in zoom-in">
-        {/* Header */}
-        <div className="p-8 border-b border-slate-800 flex justify-between items-center bg-slate-900/50 sticky top-0 z-10">
-          <div>
-            <h2 className="text-xl font-black text-white uppercase tracking-tighter italic">
-              {initialData ? "Edit Race" : "Create New Race"}
-            </h2>
-            <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.3em]">
-              Identity & Logistics
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-3 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-2xl transition-all"
-          >
-            <X size={20} />
-          </button>
-        </div>
+      />
 
-        <div className="p-8 overflow-y-auto custom-scrollbar space-y-8">
-          {/* Row 1: Event Name */}
-          <div className="space-y-3">
-            <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-1">
-              Event Name
-            </label>
-            <input
-              required
-              type="text"
-              className="w-full bg-slate-800/50 border border-slate-700 rounded-2xl p-4 text-white outline-none focus:border-blue-500 transition-all font-semibold"
-              value={formData.name}
-              onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
-              }
-              placeholder="e.g. Jakarta Marathon 2026"
-            />
-          </div>
-
-          {/* Row 2: Date Schedule */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
-                Date Schedule
-              </label>
-              <button
-                type="button"
-                onClick={() => setIsMultiDay(!isMultiDay)}
-                className={`text-[9px] font-black px-3 py-1 rounded-lg border transition-all ${
-                  isMultiDay
-                    ? "bg-blue-600 border-blue-400 text-white"
-                    : "bg-slate-800 border-slate-700 text-slate-500"
-                }`}
-              >
-                {isMultiDay ? "✓ MULTI-DAY ACTIVE" : "+ ADD END DATE"}
-              </button>
+      {/* Compact Central Modal */}
+      <div className="relative w-full max-w-5xl bg-slate-900/80 border border-white/10 rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in duration-300">
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-900/40">
+                {initialData ? <Edit3 size={14} /> : <Plus size={14} />}
+              </div>
+              <div>
+                <h2 className="text-[11px] font-black text-white uppercase tracking-[0.2em] italic leading-none">
+                  {initialData
+                    ? "Modify Race Specification"
+                    : "Register New Event Entry"}
+                </h2>
+              </div>
             </div>
-            <div
-              className={`grid ${
-                isMultiDay ? "grid-cols-2" : "grid-cols-1"
-              } gap-4 animate-in fade-in duration-300`}
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1.5 hover:bg-white/5 rounded-full text-slate-500 transition-all"
             >
-              <div className="space-y-2">
-                <input
-                  required
-                  type="date"
-                  className="w-full bg-slate-800/50 border border-slate-700 rounded-2xl p-4 text-white text-sm outline-none focus:border-blue-500 transition-all"
-                  value={formData.date}
-                  onChange={(e) =>
-                    setFormData({ ...formData, date: e.target.value })
-                  }
-                />
-                {isMultiDay && (
-                  <p className="text-[9px] text-slate-600 font-bold uppercase ml-1">
-                    Start Date
-                  </p>
+              <X size={18} />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+            {/* LEFT: LOGO UPLOAD (3 COLS) */}
+            <div className="md:col-span-3 flex flex-col items-center justify-center space-y-4 p-6 bg-white/[0.02] border border-white/5 rounded-3xl group">
+              <div
+                onClick={() => fileInputRef.current.click()}
+                className="relative w-36 h-36 rounded-2xl bg-slate-950 border-2 border-dashed border-slate-800 group-hover:border-blue-500/50 flex items-center justify-center overflow-hidden cursor-pointer transition-all shadow-inner"
+              >
+                {logoPreview ? (
+                  <img
+                    src={logoPreview}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform"
+                    alt="Logo Preview"
+                  />
+                ) : (
+                  <div className="flex flex-col items-center text-slate-700 group-hover:text-blue-500 transition-colors">
+                    <Upload size={24} />
+                    <span className="text-[8px] font-black uppercase mt-2">
+                      Upload Square
+                    </span>
+                  </div>
                 )}
               </div>
-              {isMultiDay && (
-                <div className="space-y-2 animate-in slide-in-from-left-2">
+
+              <input
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                accept="image/*"
+                onChange={handleFileChange}
+              />
+              <p className="text-[7px] text-slate-600 font-bold uppercase italic text-center leading-relaxed">
+                Format: JPG, PNG, WEBP
+                <br />
+                Max 2MB
+              </p>
+            </div>
+
+            {/* RIGHT: MAIN DATA (9 COLS) */}
+            <div className="md:col-span-9 space-y-5">
+              {/* Row 1: Name & Location */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[8px] font-black text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1.5">
+                    <Trophy size={10} className="text-blue-500" /> Event Name
+                  </label>
+                  <input
+                    required
+                    className="w-full bg-slate-950/50 border border-white/5 rounded-xl py-2.5 px-4 text-[11px] text-white outline-none focus:border-blue-500/50 transition-all"
+                    placeholder="e.g. UI ULTRA 2026"
+                    value={formData.name}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[8px] font-black text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1.5">
+                    <MapPin size={10} className="text-blue-500" /> Venue
+                  </label>
+                  <input
+                    required
+                    className="w-full bg-slate-950/50 border border-white/5 rounded-xl py-2.5 px-4 text-[11px] text-white outline-none focus:border-blue-500/50 transition-all"
+                    placeholder="e.g. Kampus UI Depok"
+                    value={formData.location}
+                    onChange={(e) =>
+                      setFormData({ ...formData, location: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+
+              {/* Row 2: Range Schedule */}
+              <div className="grid grid-cols-2 gap-4 p-4 bg-white/[0.02] border border-white/5 rounded-2xl">
+                <div className="space-y-1.5">
+                  <label className="text-[8px] font-black text-blue-500 uppercase tracking-widest ml-1">
+                    Start Date
+                  </label>
+                  <input
+                    required
+                    type="date"
+                    className="w-full bg-slate-950 border border-white/5 rounded-xl py-2 px-3 text-[11px] text-white outline-none focus:border-blue-500/50 [color-scheme:dark]"
+                    value={formData.date}
+                    onChange={(e) =>
+                      setFormData({ ...formData, date: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[8px] font-black text-slate-500 uppercase tracking-widest ml-1">
+                    End Date (Optional)
+                  </label>
                   <input
                     type="date"
-                    className="w-full bg-slate-800/50 border border-slate-700 rounded-2xl p-4 text-white text-sm outline-none focus:border-blue-500 transition-all"
+                    className="w-full bg-slate-950 border border-white/5 rounded-xl py-2 px-3 text-[11px] text-white outline-none focus:border-blue-500/50 [color-scheme:dark]"
                     value={formData.end_date}
                     onChange={(e) =>
                       setFormData({ ...formData, end_date: e.target.value })
                     }
                   />
-                  <p className="text-[9px] text-slate-600 font-bold uppercase ml-1">
-                    End Date
-                  </p>
                 </div>
-              )}
-            </div>
-          </div>
-
-          {/* Row 3: Location (Single Row) */}
-          <div className="space-y-3">
-            <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-1 flex items-center gap-2">
-              <MapPin size={12} className="text-blue-500" /> Location
-            </label>
-            <input
-              type="text"
-              className="w-full bg-slate-800/50 border border-slate-700 rounded-2xl p-4 text-white text-sm outline-none focus:border-blue-500 transition-all font-semibold"
-              value={formData.location}
-              onChange={(e) =>
-                setFormData({ ...formData, location: e.target.value })
-              }
-              placeholder="e.g. Gelora Bung Karno, Jakarta"
-            />
-          </div>
-
-          {/* Row 4: Categories (Single Row) */}
-          <div className="space-y-4">
-            <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-1 flex items-center gap-2">
-              <Tag size={12} className="text-blue-500" /> Race Categories
-            </label>
-            <div className="flex gap-3">
-              <input
-                type="text"
-                className="flex-1 bg-slate-800/50 border border-slate-700 rounded-2xl p-4 text-white text-sm outline-none focus:border-blue-500 transition-all font-semibold"
-                value={newCat}
-                onChange={(e) => setNewCat(e.target.value)}
-                onKeyPress={(e) =>
-                  e.key === "Enter" && (e.preventDefault(), addCategory())
-                }
-                placeholder="e.g. Full Marathon"
-              />
-              <button
-                type="button"
-                onClick={addCategory}
-                className="px-6 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl transition-colors shadow-lg shadow-blue-900/20 flex items-center justify-center"
-              >
-                <Plus size={20} />
-              </button>
-            </div>
-            {/* Category Badges */}
-            <div className="flex flex-wrap gap-2 pt-1">
-              {formData.categories.map((c, i) => (
-                <span
-                  key={i}
-                  className="bg-blue-500/10 text-blue-400 border border-blue-600/20 px-4 py-2 rounded-xl text-[10px] font-black flex items-center gap-3 uppercase tracking-tighter"
-                >
-                  {c}{" "}
-                  <X
-                    size={14}
-                    className="cursor-pointer hover:text-red-400 transition-colors"
-                    onClick={() =>
-                      setFormData({
-                        ...formData,
-                        categories: formData.categories.filter(
-                          (cat) => cat !== c
-                        ),
-                      })
-                    }
-                  />
-                </span>
-              ))}
-              {formData.categories.length === 0 && (
-                <p className="text-[10px] text-slate-600 italic font-medium ml-1">
-                  No categories added yet.
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Row 5: Assets & Social Links */}
-          <div className="space-y-5 pt-4 border-t border-slate-800/50">
-            <label className="text-[10px] font-black text-blue-500 uppercase tracking-[0.2em] flex items-center gap-2">
-              <Link size={14} /> Event Links
-            </label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-[9px] font-bold text-slate-500 uppercase">
-                  Logo URL
-                </label>
-                <input
-                  type="text"
-                  className="w-full bg-slate-800/50 border border-slate-700 rounded-xl p-3 text-white text-xs outline-none focus:border-blue-500"
-                  value={formData.logo_url}
-                  onChange={(e) =>
-                    setFormData({ ...formData, logo_url: e.target.value })
-                  }
-                  placeholder="https://..."
-                />
               </div>
-              <div className="space-y-2">
-                <label className="text-[9px] font-bold text-slate-500 uppercase">
-                  Official Website
-                </label>
-                <input
-                  type="text"
-                  className="w-full bg-slate-800/50 border border-slate-700 rounded-xl p-3 text-white text-xs outline-none focus:border-blue-500"
-                  value={formData.website_url}
-                  onChange={(e) =>
-                    setFormData({ ...formData, website_url: e.target.value })
-                  }
-                  placeholder="https://..."
-                />
-              </div>
-              <div className="space-y-2 md:col-span-2">
-                <label className="text-[9px] font-bold text-slate-500 uppercase flex items-center gap-2">
-                  <Instagram size={12} /> Instagram URL / Handle
-                </label>
-                <input
-                  type="text"
-                  className="w-full bg-slate-800/50 border border-slate-700 rounded-xl p-3 text-white text-xs outline-none focus:border-blue-500"
-                  value={formData.social_url}
-                  onChange={(e) =>
-                    setFormData({ ...formData, social_url: e.target.value })
-                  }
-                  placeholder="instagram.com/3onerunners"
-                />
-              </div>
-            </div>
-          </div>
 
-          {/* Row 6: Post-Race URLs (Hanya Edit) */}
-          {initialData && (
-            <div className="space-y-5 pt-4 border-t border-slate-800/50 animate-in fade-in">
-              <label className="text-[10px] font-black text-yellow-500 uppercase tracking-[0.2em] flex items-center gap-2">
-                <Award size={14} /> Race Results & Documentation
-              </label>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-[9px] font-bold text-slate-500 uppercase">
-                    Result URL
+              {/* Row 3: Technical URLs */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-[8px] font-black text-emerald-500 uppercase tracking-widest ml-1 flex items-center gap-1.5">
+                    <Globe size={10} /> Web
                   </label>
                   <input
-                    type="text"
-                    className="w-full bg-slate-800/50 border border-slate-700 rounded-xl p-3 text-white text-xs outline-none focus:border-blue-500"
+                    className="w-full bg-slate-950/50 border border-white/5 rounded-xl py-2 px-3 text-[11px] text-white outline-none focus:border-emerald-500/50"
+                    placeholder="https://..."
+                    value={formData.website_url}
+                    onChange={(e) =>
+                      setFormData({ ...formData, website_url: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[8px] font-black text-pink-500 uppercase tracking-widest ml-1 flex items-center gap-1.5">
+                    <Instagram size={10} /> Social
+                  </label>
+                  <input
+                    className="w-full bg-slate-950/50 border border-white/5 rounded-xl py-2 px-3 text-[11px] text-white outline-none focus:border-pink-500/50"
+                    placeholder="Instagram URL"
+                    value={formData.social_url}
+                    onChange={(e) =>
+                      setFormData({ ...formData, social_url: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[8px] font-black text-blue-400 uppercase tracking-widest ml-1 flex items-center gap-1.5">
+                    <ExternalLink size={10} /> Result
+                  </label>
+                  <input
+                    className="w-full bg-slate-950/50 border border-white/5 rounded-xl py-2 px-3 text-[11px] text-white outline-none focus:border-blue-400/50"
+                    placeholder="Result Link"
                     value={formData.result_url}
                     onChange={(e) =>
                       setFormData({ ...formData, result_url: e.target.value })
                     }
-                    placeholder="https://..."
                   />
                 </div>
-                <div className="space-y-2">
-                  <label className="text-[9px] font-bold text-slate-500 uppercase">
-                    Documentation URL
+                <div className="space-y-1.5">
+                  <label className="text-[8px] font-black text-orange-400 uppercase tracking-widest ml-1 flex items-center gap-1.5">
+                    <FileText size={10} /> Doc
                   </label>
                   <input
-                    type="text"
-                    className="w-full bg-slate-800/50 border border-slate-700 rounded-xl p-3 text-white text-xs outline-none focus:border-blue-500"
+                    className="w-full bg-slate-950/50 border border-white/5 rounded-xl py-2 px-3 text-[11px] text-white outline-none focus:border-orange-400/50"
+                    placeholder="Gdrive Link"
                     value={formData.doc_url}
                     onChange={(e) =>
                       setFormData({ ...formData, doc_url: e.target.value })
                     }
-                    placeholder="https://..."
                   />
                 </div>
               </div>
-            </div>
-          )}
-        </div>
 
-        {/* Footer Submit */}
-        <div className="p-8 border-t border-slate-800 bg-slate-900 sticky bottom-0 z-10">
-          <button
-            disabled={loading}
-            type="submit"
-            onClick={handleSubmit}
-            className="w-full py-5 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 text-white font-black rounded-[2rem] transition-all uppercase text-[11px] tracking-[0.3em] flex items-center justify-center gap-3 shadow-xl shadow-blue-900/20"
-          >
-            {loading ? (
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-            ) : (
-              <>
-                <Save size={18} />{" "}
-                {initialData ? "Update Changes" : "Create Race"}
-              </>
-            )}
-          </button>
-        </div>
+              {/* Row 4: Categories Selection */}
+              <div className="space-y-2">
+                <label className="text-[8px] font-black text-slate-500 uppercase tracking-widest ml-1">
+                  Race Categories (Tags)
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    className="flex-1 bg-slate-950/50 border border-white/5 rounded-xl py-2.5 px-4 text-[11px] text-white outline-none focus:border-blue-500/50"
+                    placeholder="e.g. 5K, 10K, Half Marathon"
+                    value={newCategory}
+                    onChange={(e) => setNewCategory(e.target.value)}
+                    onKeyPress={(e) =>
+                      e.key === "Enter" && (e.preventDefault(), addCategory())
+                    }
+                  />
+                  <button
+                    type="button"
+                    onClick={addCategory}
+                    className="p-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl transition-all shadow-lg active:scale-95"
+                  >
+                    <Plus size={16} />
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-1.5 mt-2 min-h-[30px] items-center">
+                  {formData.categories.map((cat) => (
+                    <span
+                      key={cat}
+                      className="px-2.5 py-1 bg-blue-500/10 border border-blue-500/20 text-blue-500 rounded-lg text-[9px] font-black uppercase flex items-center gap-1.5 animate-in zoom-in group"
+                    >
+                      {cat}
+                      <button
+                        type="button"
+                        onClick={() => removeCategory(cat)}
+                        className="text-blue-500/50 hover:text-white transition-colors"
+                      >
+                        <X size={10} />
+                      </button>
+                    </span>
+                  ))}
+                  {formData.categories.length === 0 && (
+                    <span className="text-[9px] text-slate-700 font-black uppercase italic tracking-widest">
+                      No categories defined
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Action Footer */}
+          <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-white/5">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 py-3 bg-slate-900 border border-white/5 text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl hover:bg-slate-800 transition-all"
+            >
+              Cancel Process
+            </button>
+            <button
+              disabled={submitting}
+              type="submit"
+              className="flex-[3] py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 text-white text-[10px] font-black uppercase tracking-[0.3em] rounded-2xl shadow-xl shadow-blue-900/20 flex items-center justify-center gap-3 transition-all active:scale-[0.98]"
+            >
+              {submitting ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <Save size={16} />
+              )}
+              {initialData ? "Apply Specifications" : "Finalize Event Registry"}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

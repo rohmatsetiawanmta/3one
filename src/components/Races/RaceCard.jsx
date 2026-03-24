@@ -1,31 +1,8 @@
 import React from "react";
-import {
-  Calendar,
-  MapPin,
-  Trophy,
-  Users,
-  Edit2,
-  ChevronRight,
-} from "lucide-react";
+import { Calendar, MapPin, Trophy, ChevronRight } from "lucide-react";
+import { formatDateRange } from "../../utils/formatDateRange";
 
 const RaceCard = ({ race, onClick, onEdit }) => {
-  const formatDateRange = (start, end) => {
-    const s = new Date(start);
-    if (!end || start === end) {
-      return s.toLocaleDateString("id-ID", { day: "numeric", month: "short" });
-    }
-    const e = new Date(end);
-    if (s.getMonth() === e.getMonth()) {
-      return `${s.getDate()}-${e.getDate()} ${s.toLocaleDateString("id-ID", {
-        month: "short",
-      })}`;
-    }
-    return `${s.toLocaleDateString("id-ID", {
-      day: "numeric",
-      month: "short",
-    })} - ${e.toLocaleDateString("id-ID", { day: "numeric", month: "short" })}`;
-  };
-
   return (
     <div
       onClick={() => onClick(race)}
@@ -104,17 +81,6 @@ const RaceCard = ({ race, onClick, onEdit }) => {
           </div>
         </div>
       </div>
-
-      {/* Tombol Edit - Muncul saat Hover */}
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onEdit(race);
-        }}
-        className="absolute right-10 top-1/2 -translate-y-1/2 p-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-400 opacity-0 group-hover:opacity-100 hover:text-blue-400 transition-all z-20 shadow-xl"
-      >
-        <Edit2 size={12} />
-      </button>
     </div>
   );
 };

@@ -57,7 +57,7 @@ const AuthPage = () => {
               token: result.data.session_token,
             })
           );
-          window.location.href = "/";
+          navigate("/");
           window.location.reload();
         } else {
           setSuccess(

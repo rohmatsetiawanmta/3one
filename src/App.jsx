@@ -17,6 +17,8 @@ import RaceHistoryPage from "./pages/RaceHistoryPage";
 // Admin Pages
 import UserManagement from "./pages/admin/UserManagement";
 import ResultManagement from "./pages/admin/ResultManagement";
+import ActivityLog from "./pages/admin/ActivityLog";
+import RaceManagement from "./pages/admin/RaceManagement";
 
 const App = () => {
   const [user, setUser] = useState(null);
@@ -72,7 +74,7 @@ const App = () => {
       <main className="container mx-auto px-4 py-8 md:px-6 lg:px-8 max-w-7xl">
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/races" element={<RaceListPage />} />
+          <Route path="/races" element={<RaceListPage user={user} />} />
           <Route path="/members" element={<MembersPage />} />
           <Route path="/auth" element={<AuthPage />} />
           <Route
@@ -98,6 +100,18 @@ const App = () => {
               ) : (
                 <Navigate to="/" />
               )
+            }
+          />
+          <Route
+            path="/admin/logs"
+            element={
+              user?.role === "admin" ? <ActivityLog /> : <Navigate to="/" />
+            }
+          />
+          <Route
+            path="/admin/races"
+            element={
+              user?.role === "admin" ? <RaceManagement /> : <Navigate to="/" />
             }
           />
         </Routes>
